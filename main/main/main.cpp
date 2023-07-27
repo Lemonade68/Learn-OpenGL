@@ -1,6 +1,7 @@
 #include<glad\glad.h>		//确保放在最前面，需要在其他依赖于opengl的头文件前包含
 #include<GLFW\glfw3.h>
 #include<iostream>
+#include"shader.h"
 
 //窗口回调函数
 void frame_buffer_size_callback(GLFWwindow* window, int width, int height);
@@ -9,26 +10,6 @@ void processInput(GLFWwindow* window);
 // settings
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
-
-//使用layout标识符来将颜色位置值设置为1
-const char *vertexShaderSource = "#version 330 core\n"
-	"layout (location = 0) in vec3 aPos;\n"
-	"layout (location = 1) in vec3 aColor;\n"
-	"out vec3 ourColor;\n"
-	"void main()\n"
-	"{\n"
-	"   gl_Position = vec4(aPos, 1.0);\n"
-	"   ourColor = aColor;\n"
-	"}\0";
-
-const char *fragmentShaderSource = "#version 330 core\n"
-	"out vec4 FragColor;\n"
-	"in vec3 ourColor;\n"
-	"void main()\n"
-	"{\n"
-	"   FragColor = vec4(ourColor, 1.0f);\n"
-	"}\0";
-
 
 int main() {
 	// glfw: initialize and configure
@@ -58,38 +39,7 @@ int main() {
 
 	//bulid shader program
 	//-----------------------------------------------------------
-	//创建一个顶点着色器对象
-	unsigned int vertexShader;
-	vertexShader = glCreateShader(GL_VERTEX_SHADER);
-	//将着色器源码附到着色器对象上并编译
-	glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-	glCompileShader(vertexShader);
-
-	//检查顶点着色器是否编译成功
-	int  success;
-	char infoLog[512];
-	glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-	if (!success) {
-		glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-		std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
-	}
-
-	//编辑片段着色器
-	unsigned int fragmentShader;
-	fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-	glCompileShader(fragmentShader);
-
-	//创建着色器程序
-	unsigned int shaderProgram;
-	shaderProgram = glCreateProgram();
-	glAttachShader(shaderProgram, vertexShader);
-	glAttachShader(shaderProgram, fragmentShader);
-	glLinkProgram(shaderProgram);
-	
-	//着色器对象链接到程序对象后，记得删除着色器
-	glDeleteShader(vertexShader);
-	glDeleteShader(fragmentShader);
+	Shader ourShader("vertex_shader.glsl", "fragment_shader.glsl");
 
 	//设置顶点数据、顶点缓冲以及确认顶点缓冲解读方式(vertex attributes)
 	//-----------------------------------------------------------
@@ -132,7 +82,7 @@ int main() {
 		glClear(GL_COLOR_BUFFER_BIT);			//状态使用
 		
 		//第一步永远是激活shader program
-		glUseProgram(shaderProgram);
+		ourShader.use();
 
 		//使用着色器程序画三角形
 		glBindVertexArray(VAO);			//绑定到VAO也会自动绑定对应的EBO
@@ -148,7 +98,6 @@ int main() {
 	//-----------------------------------------------------------
 	glDeleteVertexArrays(1,&VAO);
 	glDeleteBuffers(1, &VBO);
-	glDeleteProgram(shaderProgram);
 
 	// glfw: terminate, clearing all previously allocated GLFW resources.
 	//-----------------------------------------------------------
