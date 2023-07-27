@@ -18,12 +18,14 @@ const char *vertexShaderSource = "#version 330 core\n"
 	"   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
 	"}\0";
 
-const char* fragmentShaderSource = "#version 330 core\n"
+const char *fragmentShaderSource = "#version 330 core\n"
 	"out vec4 FragColor;\n"
+	"uniform vec4 ourColor;\n"
 	"void main()\n"
 	"{\n"
-	"	FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
-	"}\0";
+	"   FragColor = ourColor;\n"
+	"}\n\0";
+
 
 int main() {
 	// glfw: initialize and configure
@@ -90,15 +92,9 @@ int main() {
 	//-----------------------------------------------------------
 	//设置标准化顶点坐标
 	float vertices[] = {
-		0.5f, 0.5f, 0.0f,   // 右上角
-		0.5f, -0.5f, 0.0f,  // 右下角
-		-0.5f, -0.5f, 0.0f, // 左下角
-		-0.5f, 0.5f, 0.0f   // 左上角
-	};
-	//设置顶点索引    给EBO使用
-	unsigned int indices[] = {
-		0, 1, 3,	//第一个三角形
-		1, 2, 3		//第二个三角形
+		 0.5f, -0.5f, 0.0f,  // bottom right
+		-0.5f, -0.5f, 0.0f,  // bottom left
+		 0.0f,  0.5f, 0.0f   // top 
 	};
 	
 	//定义顶点缓冲对象，用于一次性发送大批数据到显卡上
@@ -107,9 +103,6 @@ int main() {
 	//创建一个VAO（一个VAO表示对VBO中数据的一种解释以及一个EBO，相当于一种状态配置）
 	unsigned int VAO;
 	glGenVertexArrays(1, &VAO);
-	//创建EBO（索引绘制）  也是buffer，与VBO类似
-	unsigned int EBO;
-	glGenBuffers(1, &EBO);
 	
 	//首先绑定好VAO，下面开始配置这个VAO
 	glBindVertexArray(VAO);
@@ -119,10 +112,6 @@ int main() {
 	//将之前定义的顶点数据复制到缓冲的内存中
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 	
-	//绑定EBO（注意绑定VAO时，绑定的最后一个EBO自动存储为该VAO的元素缓冲区对象）
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
 	//告诉openGL如何解析顶点数据（当前绑定的VBO中的数据）   注意是当前
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
@@ -135,7 +124,7 @@ int main() {
 	glBindVertexArray(0);
 
 	//是否使用线框模式
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 	//进入渲染循环	
 	//-----------------------------------------------------------
@@ -149,14 +138,18 @@ int main() {
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);	//状态设置
 		glClear(GL_COLOR_BUFFER_BIT);			//状态使用
 		
-		//使用着色器程序画三角形
+		//第一步永远是激活shader program
 		glUseProgram(shaderProgram);
+
+		//更新shader uniform
+		double timeValue = glfwGetTime();
+		float greenValue = static_cast<float>(sin(timeValue) / 2.0 + 0.5);
+		int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
+		glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);		//改变uniform变量的值
+
+		//使用着色器程序画三角形
 		glBindVertexArray(VAO);			//绑定到VAO也会自动绑定对应的EBO
-		//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-		//绘制模式使用glDrawElements而不是glDrawArrays
-		//glDrawArrays(GL_TRIANGLES, 0, 6);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-		//glBindVertexArray(0);		//不需要每次都unbind他
+		glDrawArrays(GL_TRIANGLES, 0, 3);
 
 		//检查并调用事件，交换缓冲
 		//----------------------------------------
@@ -168,7 +161,6 @@ int main() {
 	//-----------------------------------------------------------
 	glDeleteVertexArrays(1,&VAO);
 	glDeleteBuffers(1, &VBO);
-	glDeleteBuffers(1, &EBO);
 	glDeleteProgram(shaderProgram);
 
 	// glfw: terminate, clearing all previously allocated GLFW resources.
