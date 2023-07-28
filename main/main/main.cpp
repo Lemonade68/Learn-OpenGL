@@ -39,7 +39,7 @@ int main() {
 
 	//bulid shader program
 	//-----------------------------------------------------------
-	Shader ourShader("vertex_shader.glsl", "fragment_shader.glsl");
+	Shader ourShader("..//..//Shader//vertex_shader.glsl", "..//..//Shader//fragment_shader.glsl");
 
 	//设置顶点数据、顶点缓冲以及确认顶点缓冲解读方式(vertex attributes)
 	//-----------------------------------------------------------
