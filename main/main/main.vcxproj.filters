@@ -26,12 +26,15 @@
     <ClInclude Include="shader.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="stb_image.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="vertex_shader.glsl">
+    <None Include="..\..\Shader\fragment_shader.glsl">
       <Filter>资源文件</Filter>
     </None>
-    <None Include="fragment_shader.glsl">
+    <None Include="..\..\Shader\vertex_shader.glsl">
       <Filter>资源文件</Filter>
     </None>
   </ItemGroup>
