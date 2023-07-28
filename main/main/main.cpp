@@ -1,7 +1,11 @@
 #include<glad/glad.h>		//确保放在最前面，需要在其他依赖于opengl的头文件前包含
 #include<GLFW/glfw3.h>
-#include"Shader.h"
 #include<iostream>
+#include<glm\glm.hpp>
+#include<glm\gtc\matrix_transform.hpp>
+#include<glm\gtc\type_ptr.hpp>
+#include"Shader.h"
+
 
 //图像加载库
 #define STB_IMAGE_IMPLEMENTATION
@@ -49,32 +53,13 @@ int main() {
 
 	//设置顶点数据、顶点缓冲以及确认顶点缓冲解读方式(vertex attributes)
 	//-----------------------------------------------------------
-	//float vertices[] = {
-	//	// ---- 位置 ----       ---- 颜色 ----     ---- 纹理坐标 ----
-	//	 0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // 右上
-	//	 0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // 右下
-	//	-0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // 左下
-	//	-0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // 左上
-	//};
-
-	//测试环绕
 	float vertices[] = {
-		// positions          // colors           // texture coords (note that we changed them to 2.0f!)
-		 0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   2.0f, 2.0f, // top right
-		 0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   2.0f, 0.0f, // bottom right
-		-0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // bottom left
-		-0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 2.0f  // top left 
+		// ---- 位置 ----       ---- 颜色 ----     ---- 纹理坐标 ----
+		 0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // 右上
+		 0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // 右下
+		-0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // 左下
+		-0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // 左上
 	};
-	//理解纹理坐标超出1.0的情况：顶点上的纹理会按照环绕方式来得到颜色（顶点对应着纹理坐标）
-
-	////测试只显示纹理的中间一部分
-	//float vertices[] = {
-	//	// positions          // colors           // texture coords (note that we changed them to 'zoom in' on our texture image)
-	//	 0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   0.55f, 0.55f, // top right
-	//	 0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   0.55f, 0.45f, // bottom right
-	//	-0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.45f, 0.45f, // bottom left
-	//	-0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.45f, 0.55f  // top left 
-	//};
 
 	unsigned int indexes[] = {
 		0,1,3,          //第一个三角形
@@ -163,6 +148,14 @@ int main() {
 	glUniform1i(glGetUniformLocation(ourShader.ID, "texture1"), 0);
 	ourShader.setInt("texture2", 1);     //两种设置方式都可
 
+	//创建变换矩阵
+	//-----------------------------------------------------------
+	//glm::mat4 trans = glm::mat4(1.0f);		//初始化单位矩阵
+	//绕z轴旋转，且用radians转化为弧度制			//注意阅读顺序：从下往上！（矩阵从右往左）
+	//trans = glm::rotate(trans, glm::radians(90.0f), glm::vec3(0.0, 0.0, 1.0));	
+	//trans = glm::scale(trans, glm::vec3(0.5, 0.5, 0.5));
+	
+
 	//进入渲染循环	
 	//-----------------------------------------------------------
 	while (!glfwWindowShouldClose(window)) {
@@ -182,8 +175,26 @@ int main() {
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, texture2);
 
+		//绕0,0旋转后移到右下角（由于一直旋转，需要一直创建，每次时间不同，角度不同）
+		glm::mat4 trans = glm::mat4(1.0f);			//初始化单位矩阵
+		trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
+		trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.0, 0.0, 1.0));
+
+		//注意顺序不同带来的不同后果：（平移后旋转）
+		//trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.0, 0.0, 1.0));
+		//trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
+
+		glm::mat4 trans2 = glm::mat4(1.0f);
+		trans2 = glm::translate(trans2, glm::vec3(-0.5f, 0.5f, 0.0f));
+		trans2 = glm::scale(trans2, glm::vec3(abs(sin(glfwGetTime())), abs(sin(glfwGetTime())), 1.0f));
+
 		//第一步永远是激活shader program
 		ourShader.use();
+
+		//传送给顶点着色器中的uniform变量
+		unsigned int transformLoc = glGetUniformLocation(ourShader.ID, "transform");
+		glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
+		
 		//设置mixValue值
 		ourShader.setFloat("transparancy", mixValue);
 
@@ -191,6 +202,10 @@ int main() {
 
 		//检查并调用事件，交换缓冲
 		//----------------------------------------
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+		// this time take the matrix value array's first element as its memory pointer value
+		glUniformMatrix4fv(transformLoc, 1, GL_FALSE, &trans2[0][0]);	//最后一个参数的另一种写法
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 		glfwSwapBuffers(window);
@@ -228,6 +243,7 @@ void processInput(GLFWwindow *window) {
 			mixValue = 0.0f;
 	}
 }
+
 
 
 
