@@ -15,6 +15,8 @@ void processInput(GLFWwindow *window);
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
+float mixValue = 0.2f;
+
 int main() {
 	// glfw: initialize and configure
 	//-----------------------------------------------------------
@@ -47,13 +49,32 @@ int main() {
 
 	//设置顶点数据、顶点缓冲以及确认顶点缓冲解读方式(vertex attributes)
 	//-----------------------------------------------------------
+	//float vertices[] = {
+	//	// ---- 位置 ----       ---- 颜色 ----     ---- 纹理坐标 ----
+	//	 0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // 右上
+	//	 0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // 右下
+	//	-0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // 左下
+	//	-0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // 左上
+	//};
+
+	//测试环绕
 	float vertices[] = {
-		// ---- 位置 ----       ---- 颜色 ----     ---- 纹理坐标 ----
-		 0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // 右上
-		 0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // 右下
-		-0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // 左下
-		-0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // 左上
+		// positions          // colors           // texture coords (note that we changed them to 2.0f!)
+		 0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   2.0f, 2.0f, // top right
+		 0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   2.0f, 0.0f, // bottom right
+		-0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // bottom left
+		-0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 2.0f  // top left 
 	};
+	//理解纹理坐标超出1.0的情况：顶点上的纹理会按照环绕方式来得到颜色（顶点对应着纹理坐标）
+
+	////测试只显示纹理的中间一部分
+	//float vertices[] = {
+	//	// positions          // colors           // texture coords (note that we changed them to 'zoom in' on our texture image)
+	//	 0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   0.55f, 0.55f, // top right
+	//	 0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   0.55f, 0.45f, // bottom right
+	//	-0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.45f, 0.45f, // bottom left
+	//	-0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.45f, 0.55f  // top left 
+	//};
 
 	unsigned int indexes[] = {
 		0,1,3,          //第一个三角形
@@ -96,9 +117,9 @@ int main() {
 	glGenTextures(1, &texture1);
 	glBindTexture(GL_TEXTURE_2D, texture1);
 
-	//设置环绕和过滤方式
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	//设置环绕（2）和过滤（2）方式     木板设置为边缘环绕
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);   //注意缩小和放大的不同过滤方式
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
@@ -119,7 +140,7 @@ int main() {
 	//生成纹理和对应多级渐远纹理后，释放图像内存
 	stbi_image_free(data);
 
-	//第二个纹理
+	//第二个纹理				笑脸设置为重复环绕
 	glGenTextures(1, &texture2);
 	glBindTexture(GL_TEXTURE_2D, texture2);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -163,6 +184,8 @@ int main() {
 
 		//第一步永远是激活shader program
 		ourShader.use();
+		//设置mixValue值
+		ourShader.setFloat("transparancy", mixValue);
 
 		glBindVertexArray(VAO);		//绑定到VAO也会自动绑定对应的EBO
 
@@ -194,6 +217,16 @@ void processInput(GLFWwindow *window) {
 	//esc键关闭窗口
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);		//终止下一次while循环的条件
+	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+		mixValue += 0.001f;
+		if (mixValue >= 1.0f)
+			mixValue = 1.0f;
+	}
+	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+		mixValue -= 0.001f;
+		if (mixValue <= 0.0f)
+			mixValue = 0.0f;
+	}
 }
 
 
