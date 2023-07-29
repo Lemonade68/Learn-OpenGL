@@ -4,7 +4,8 @@
 #include<glm\glm.hpp>
 #include<glm\gtc\matrix_transform.hpp>
 #include<glm\gtc\type_ptr.hpp>
-#include"Shader.h"
+#include"shader.h"
+#include"camera.h"
 
 //图像加载库
 #define STB_IMAGE_IMPLEMENTATION
@@ -21,30 +22,13 @@ const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 float mixValue = 0.2f;		//透明度
 
-//创建摄像机(实际上是物体在运动)
+//创建摄像机(实际上是物体在运动，通过loolAt矩阵来让物体反着运动造成摄像机移动的假象)
 //-----------------------------------------------------------
-////摄像机位置
-//glm::vec3 cameraPos(0.0f, 0.0f, 3.0f);
-////摄像机方向 —— 实际与摄像机指向相反		摄像机+z轴
-//glm::vec3 cameraTarget(0.0f, 0.0f, 0.0f);
-//glm::vec3 cameraDirection = glm::normalize(cameraPos - cameraDirection);	
-////右轴（使用上向量和方向叉乘）	摄像机+x轴
-//glm::vec3 up(0.0f, 1.0f, 0.0f);
-//glm::vec3 cameraRight = glm::normalize(glm::cross(up, cameraDirection));
-////上轴（右轴和方向叉乘）	摄像机+y轴
-//glm::vec3 cameraUp = glm::normalize(glm::cross(cameraDirection, cameraRight));
+Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 
-glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
-glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
-glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
-
-//俯仰角pitch和偏航角yaw(yaw是与x轴夹角，初始设置为90)
-float pitch = 0.0f;
-float yaw = -90.0f;
 //鼠标上一帧的位置
 float lastX = SCR_WIDTH / 2;
 float lastY = SCR_HEIGHT / 2;
-float FoV = 45.0f;
 
 //跟踪渲染的时间差，从而保证不同硬件上相机移动速度相应平衡  timing
 float deltaTime = 0.0f;		//当前帧与上一帧的时间差
@@ -61,7 +45,7 @@ int main() {
 
 	//创建窗口对象
 	//-----------------------------------------------------------
-	GLFWwindow *window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Triangle", NULL, NULL);
+	GLFWwindow *window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Screen", NULL, NULL);
 	if (window == nullptr) {
 		std::cout << "Failed to create GLFW window" << std::endl;
 		glfwTerminate();
@@ -141,6 +125,7 @@ int main() {
 	-0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
 	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
 	};
+
 	//设置不同立方体在空间中的位置(世界坐标)
 	glm::vec3 cubePositions[] = {
 	  glm::vec3(0.0f,  0.0f,  0.0f),
@@ -233,15 +218,6 @@ int main() {
 	glUniform1i(glGetUniformLocation(ourShader.ID, "texture1"), 0);		//手动设置
 	ourShader.setInt("texture2", 1);     //两种设置方式都可
 
-
-
-
-	//lookat矩阵：定义一个摄像机位置，一个目标位置和一个表示世界空间中的上向量的向量（我们计算右向量使用的那个上向量）
-	//glm::mat4 view = glm::lookAt(glm::vec3(0.0, 0.0, 3.0),
-	//	glm::vec3(0.0, 0.0, 0.0),
-	//	glm::vec3(0.0, 1.0, 0.0));
-	
-
 	//进入渲染循环	
 	//-----------------------------------------------------------
 	while (!glfwWindowShouldClose(window)) {
@@ -278,23 +254,18 @@ int main() {
 
 		//坐标系统
 		//-----------------------------------------------------------
-
-		////view matrix	摄像机自由移动		设成全局变量从而让输入函数可以访问
-		////view matrix  摄像机绕y轴旋转
-		/*float radius = 10.0f;
-		float camX = sin(glfwGetTime())*radius;
-		float camZ = cos(glfwGetTime())*radius;
-		glm::mat4 view = glm::lookAt(glm::vec3(camX, 0.0, camZ), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));*/
-
-		//view	要放在渲染循环里，这样才能时刻更新
-		glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
-		//这里第二个参数的含义：不管镜头怎么动，观察方向都是前方（不会聚焦在一个点上）  点加向量还是点！
+		//view matrix
+		
+		//******************************************************
+		//核心想法：在main中使用camera对象的方法来在camera库里更新camera的position/front，
+		//从而通过lookat来改变物体位置,达到摄像机移动的效果
+		//******************************************************
+		glm::mat4 view = camera.GetViewMatrix();
 
 		//projection matrix (perspective projection)
 		glm::mat4 projection(1.0f);
-		projection = glm::perspective(glm::radians(FoV), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+		projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 		//参数：fov，宽高比，近平面z值，远平面z值，注意这边的float要加，不然不能自动转好像（会报函数没有重载的问题）
-
 		
 		for (unsigned int i = 0; i < 10; ++i) {
 			//新的model
@@ -311,8 +282,6 @@ int main() {
 		
 		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 		//glDrawArrays(GL_TRIANGLES, 0, 36);
-
-
 
 		//检查并调用事件，交换缓冲
 		//----------------------------------------
@@ -337,7 +306,10 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
 	glViewport(0, 0, width, height);	//左下角位置，视口宽度，视口高度
 }
 
-void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
+void mouse_callback(GLFWwindow* window, double xposIn, double yposIn) {
+	float xpos = static_cast<float>(xposIn);
+	float ypos = static_cast<float>(yposIn);
+
 	//防止开始跳一下
 	if (firstMouse) {
 		lastX = xpos;
@@ -348,40 +320,15 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
 	//记录当前帧与上一帧的鼠标偏移量
 	float xoffset = xpos - lastX;
 	float yoffset = lastY - ypos;	//相反：因为y坐标是从下往上依次增大的
+	
 	lastX = xpos;
 	lastY = ypos;
 
-	float sensitivity = 0.05f;		//灵敏度，防止鼠标移动太快
-	xoffset *= sensitivity;
-	yoffset *= sensitivity;
-
-	//将偏移量加到俯仰角和偏移量上(每一帧移动很小，极限情况下移动距离=变化角度？)
-	yaw += xoffset;
-	pitch += yoffset;
-
-	//设置移动限制
-	if (pitch > 89.0f)
-		pitch = 89.0f;
-	if (pitch < -89.f)
-		pitch = 89.0f;
-
-	//通过俯仰角和偏航角来得到真正的方向向量
-	glm::vec3 front;
-	front.x = cos(glm::radians(pitch)) * cos(glm::radians(yaw));
-	front.y = sin(glm::radians(pitch));
-	front.z = cos(glm::radians(pitch)) * sin(glm::radians(yaw));
-	cameraFront = glm::normalize(front);		//方向向量设置为单位向量
-
+	camera.ProcessMouseMovement(xoffset, yoffset);
 }
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
-	float scale_speed = 2.0f;
-	if (FoV >= 1.0f && FoV <= 45.0f)
-		FoV -= yoffset * scale_speed;
-	if (FoV <= 1.0f)
-		FoV = 1.0f;
-	if (FoV >= 45.0f)
-		FoV = 45.0f;
+	camera.ProcessMouseScroll(static_cast<float>(yoffset));
 }
 
 
@@ -400,19 +347,19 @@ void processInput(GLFWwindow *window) {
 		if (mixValue <= 0.0f)
 			mixValue = 0.0f;
 	}
-	//移动部分
+	//移动部分(与camera类交互)
 	float cameraSpeed = 3.0f * deltaTime;		//镜头位置移动速度
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		cameraPos += cameraSpeed * cameraFront;		//乘方向向量——向着设定方向处移动
+		camera.ProcessKeyboard(FORWARD, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		cameraPos -= cameraSpeed * cameraFront;
+		camera.ProcessKeyboard(BACKWARD, deltaTime);
 	//注意需要标准化，不然朝向不同移动的速度就不同了（返回的叉乘结果不同）
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+		camera.ProcessKeyboard(LEFT, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+		camera.ProcessKeyboard(RIGHT, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-		cameraPos += glm::vec3(0.0f, cameraSpeed, 0.0f);
+		camera.ProcessKeyboard(UP, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS)
-		cameraPos -= glm::vec3(0.0f, cameraSpeed, 0.0f);
+		camera.ProcessKeyboard(DOWN, deltaTime);
 }
