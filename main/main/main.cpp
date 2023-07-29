@@ -21,6 +21,18 @@ const unsigned int SCR_HEIGHT = 600;
 
 float mixValue = 0.2f;
 
+//创建摄像机
+//-----------------------------------------------------------
+//view matrix	摄像机自由移动		设成全局变量从而让输入函数可以访问
+glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
+glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+
+
+//跟踪渲染的时间差，从而保证不同硬件上相机移动速度相应平衡
+float deltaTime = 0.0f;		//当前帧与上一帧的时间差
+float lastFrame = 0.0f;		//上一帧的时间
+
 int main() {
 	// glfw: initialize and configure
 	//-----------------------------------------------------------
@@ -182,7 +194,7 @@ int main() {
 
 	//设置每个采样器的方式告诉OpenGL每个着色器采样器属于哪个纹理单元（1次即可）
 	ourShader.use();   //设置uniform变量前不要忘记激活货色器程序!
-	glUniform1i(glGetUniformLocation(ourShader.ID, "texture1"), 0);
+	glUniform1i(glGetUniformLocation(ourShader.ID, "texture1"), 0);		//手动设置
 	ourShader.setInt("texture2", 1);     //两种设置方式都可
 
 	//创建变换矩阵
@@ -206,6 +218,25 @@ int main() {
 	  glm::vec3(-1.3f,  1.0f, -1.5f)
 	};
 
+	////创建摄像机
+	////-----------------------------------------------------------
+	////摄像机位置
+	//glm::vec3 cameraPos(0.0f, 0.0f, 3.0f);
+	////摄像机方向 —— 实际与摄像机指向相反		摄像机+z轴
+	//glm::vec3 cameraTarget(0.0f, 0.0f, 0.0f);
+	//glm::vec3 cameraDirection = glm::normalize(cameraPos - cameraDirection);	
+	////右轴（使用上向量和方向叉乘）	摄像机+x轴
+	//glm::vec3 up(0.0f, 1.0f, 0.0f);
+	//glm::vec3 cameraRight = glm::normalize(glm::cross(up, cameraDirection));
+	////上轴（右轴和方向叉乘）	摄像机+y轴
+	//glm::vec3 cameraUp = glm::normalize(glm::cross(cameraDirection, cameraRight));
+
+
+	//lookat矩阵：定义一个摄像机位置，一个目标位置和一个表示世界空间中的上向量的向量（我们计算右向量使用的那个上向量）
+	//glm::mat4 view = glm::lookAt(glm::vec3(0.0, 0.0, 3.0),
+	//	glm::vec3(0.0, 0.0, 0.0),
+	//	glm::vec3(0.0, 1.0, 0.0));
+		
 	//进入渲染循环	
 	//-----------------------------------------------------------
 	while (!glfwWindowShouldClose(window)) {
@@ -237,14 +268,16 @@ int main() {
 
 		//坐标系统
 		//-----------------------------------------------------------
-		////model matrix(局部坐标放入世界坐标)
-		//glm::mat4 model(1.0f);
-		//model = glm::rotate(model, (float)glfwGetTime()*glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));	//沿x轴向后旋转
-		////******* 注意这边第二个要转成float，详情见函数定义
 
-		//view matrix（转成摄像机视角，远离摄像机）
-		glm::mat4 view(1.0f);
-		view = glm::translate(view, glm::vec3(0.0, 0.0, -3.0));		//将场景沿-z方向移动，使得其可见（摄像机在0,0,0）
+		////view matrix  摄像机绕y轴旋转
+		/*float radius = 10.0f;
+		float camX = sin(glfwGetTime())*radius;
+		float camZ = cos(glfwGetTime())*radius;
+		glm::mat4 view = glm::lookAt(glm::vec3(camX, 0.0, camZ), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));*/
+
+		//view	要放在渲染循环里，这样才能时刻更新
+		glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+		//这里第二个参数的含义：不管镜头怎么动，观察方向都是前方（不会聚焦在一个点上）  点加向量还是点！
 
 		//projection matrix (perspective projection)
 		glm::mat4 projection(1.0f);
@@ -253,11 +286,6 @@ int main() {
 		//参数：fov，宽高比，近平面z值，远平面z值，注意这边的float要加，不然不能自动转好像（会报函数没有重载的问题）
 
 		//glm::mat4 trans = projection * view * model;
-
-		////传送给顶点着色器中的uniform变量
-		////unsigned int transformLoc = glGetUniformLocation(ourShader.ID, "transform");
-		////glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
-		//ourShader.setMat4("transform", trans);
 
 		for (unsigned int i = 0; i < 10; ++i) {
 			//新的model
@@ -274,6 +302,11 @@ int main() {
 		
 		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 		//glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		//跟踪时间差
+		float currentFrame = glfwGetTime();
+		deltaTime = currentFrame - lastFrame;
+		lastFrame = currentFrame;
 
 		//检查并调用事件，交换缓冲
 		//----------------------------------------
@@ -293,6 +326,7 @@ int main() {
 	return 0;
 }
 
+
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
 	glViewport(0, 0, width, height);	//左下角位置，视口宽度，视口高度
 }
@@ -301,6 +335,7 @@ void processInput(GLFWwindow *window) {
 	//esc键关闭窗口
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);		//终止下一次while循环的条件
+	//更改透明度
 	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
 		mixValue += 0.001f;
 		if (mixValue >= 1.0f)
@@ -311,4 +346,15 @@ void processInput(GLFWwindow *window) {
 		if (mixValue <= 0.0f)
 			mixValue = 0.0f;
 	}
+	//移动部分
+	float cameraSpeed = 3.0f * deltaTime;		//镜头位置移动速度
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+		cameraPos += cameraSpeed * cameraFront;
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+		cameraPos -= cameraSpeed * cameraFront;
+	//注意需要标准化，不然朝向不同移动的速度就不同了（返回的叉乘结果不同）
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+		cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+		cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
 }
