@@ -35,7 +35,7 @@ float deltaTime = 0.0f;		//当前帧与上一帧的时间差
 float lastFrame = 0.0f;		//上一帧的时间
 
 //光源设置
-glm::vec3 lightPos(1.2f, 1.0f, 2.0f);		//光源位置
+glm::vec3 lightPos(1.2f, 1.0f, 2.0f);		//记录光源位置的位移矩阵（给model用的）
 
 int main() {
 	// glfw: initialize and configure
@@ -88,47 +88,47 @@ int main() {
 	//物体和光源的数据
 	//-----------------------------------------------------------
 	float vertices[] = {
-		-0.5f, -0.5f, -0.5f,
-		 0.5f, -0.5f, -0.5f,
-		 0.5f,  0.5f, -0.5f,
-		 0.5f,  0.5f, -0.5f,
-		-0.5f,  0.5f, -0.5f,
-		-0.5f, -0.5f, -0.5f,
+	-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+	 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+	 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+	 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+	-0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
 
-		-0.5f, -0.5f,  0.5f,
-		 0.5f, -0.5f,  0.5f,
-		 0.5f,  0.5f,  0.5f,
-		 0.5f,  0.5f,  0.5f,
-		-0.5f,  0.5f,  0.5f,
-		-0.5f, -0.5f,  0.5f,
+	-0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+	 0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+	 0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+	 0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+	-0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+	-0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
 
-		-0.5f,  0.5f,  0.5f,
-		-0.5f,  0.5f, -0.5f,
-		-0.5f, -0.5f, -0.5f,
-		-0.5f, -0.5f, -0.5f,
-		-0.5f, -0.5f,  0.5f,
-		-0.5f,  0.5f,  0.5f,
+	-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+	-0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+	-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+	-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+	-0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+	-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
 
-		 0.5f,  0.5f,  0.5f,
-		 0.5f,  0.5f, -0.5f,
-		 0.5f, -0.5f, -0.5f,
-		 0.5f, -0.5f, -0.5f,
-		 0.5f, -0.5f,  0.5f,
-		 0.5f,  0.5f,  0.5f,
+	 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+	 0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+	 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+	 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+	 0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
 
-		-0.5f, -0.5f, -0.5f,
-		 0.5f, -0.5f, -0.5f,
-		 0.5f, -0.5f,  0.5f,
-		 0.5f, -0.5f,  0.5f,
-		-0.5f, -0.5f,  0.5f,
-		-0.5f, -0.5f, -0.5f,
+	-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+	 0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+	 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+	 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+	-0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
 
-		-0.5f,  0.5f, -0.5f,
-		 0.5f,  0.5f, -0.5f,
-		 0.5f,  0.5f,  0.5f,
-		 0.5f,  0.5f,  0.5f,
-		-0.5f,  0.5f,  0.5f,
-		-0.5f,  0.5f, -0.5f,
+	-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+	 0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+	 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+	 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+	-0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+	-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
 	};
 
 	//注意先绑定VAO再绑定VBO与VBO的数据
@@ -143,19 +143,25 @@ int main() {
 	glBindVertexArray(cubeVAO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);	
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
 
 	//光源的VAO（VBO和物体共享）
 	unsigned int lightCubeVAO;
 	glGenVertexArrays(1, &lightCubeVAO);
 	glBindVertexArray(lightCubeVAO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);		//VBO中已经包含正确的顶点数据，无需再次使用bufferdata绑定数据
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
 	//是否使用线框模式
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+	//由于这里计算颜色时仅考虑光源和物体的世界坐标，因此光源位置不需要时刻更新
+	//lightingShader.use();
+	//lightingShader.setVec3("lightPos", lightPos);							//设置光源位置
 
 	//进入渲染循环	
 	//-----------------------------------------------------------
@@ -176,32 +182,47 @@ int main() {
 		//每次渲染迭代前清除深度缓冲&颜色缓冲（否则前一帧的深度信息仍然保存在缓冲中）
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);			
 
-		//光源绘制---------------------------------
-		lightCubeShader.use();
-
 		//projection和view是光源和物体共享的
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 		glm::mat4 view = camera.GetViewMatrix();
+	
+		//改变光源位置：
+		//lightPos.x = 1.0f + sin(glfwGetTime()) * 2.0f;
+		//lightPos.y = sin(glfwGetTime() / 2.0f) * 1.0f;
+		
+		//当前方案：使用上下左右和12自主控制灯的位置
+
+		//光源绘制---------------------------------
+		lightCubeShader.use();
+		lightCubeShader.setMat4("projection", projection);
+		lightCubeShader.setMat4("view", view);
 
 		//光源固定位置
 		glm::mat4 model(1.0f);
+		//实现旋转的自己的方法，保持lightPos不变，时刻计算实际的世界坐标 —— 更直接的方法：直接改变lightPos
+		//model = glm::rotate(model, 30 * (float)glm::radians(glfwGetTime()), glm::vec3(0.0f, 1.0f, 0.0f));	//光源移动，注释掉就不移动了
 		model = glm::translate(model, lightPos);
 		model = glm::scale(model, glm::vec3(0.2f));
-		
-		glm::mat4 trans = projection * view * model;
-		lightCubeShader.setMat4("transform", trans);
+		lightCubeShader.setMat4("model", model);
 
-		glBindVertexArray(lightCubeVAO);	
+		glBindVertexArray(lightCubeVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 		//物体绘制---------------------------------
 		lightingShader.use();   
 		lightingShader.setVec3("objectColor", glm::vec3(1.0f, 0.5f, 0.31f));	//物体设置为珊瑚色
 		lightingShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);					//光源设置为白色
+		//实现旋转的自己的方法，保持lightPos不变，时刻计算实际的世界坐标 —— 更直接的方法：直接改变lightPos
+		//lightingShader.setVec3("lightPos", glm::vec3(model * glm::vec4(lightPos,1.0f)));	//设置光源位置（世界坐标变换后的光源，移动版）
+		lightingShader.setVec3("lightPos", lightPos);							//设置光源位置
+		lightingShader.setVec3("viewPos", camera.Position);						//摄像机的世界坐标
+
+		//注意这里的设置不能写到上面光源设置那边，因为那边没有激活lightingShader！！！！
+		lightingShader.setMat4("projection", projection);		//注意要重写一遍
+		lightingShader.setMat4("view", view);
 
 		model = glm::mat4(1.0f);
-		trans = projection * view * model;
-		lightingShader.setMat4("transform", trans);
+		lightingShader.setMat4("model", model);
 
 		glBindVertexArray(cubeVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -275,4 +296,18 @@ void processInput(GLFWwindow *window) {
 		camera.ProcessKeyboard(UP, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS)
 		camera.ProcessKeyboard(DOWN, deltaTime);
+
+	//灯光移动 (上下左右12)
+	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+		lightPos.y += cameraSpeed;
+	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+		lightPos.y -= cameraSpeed;
+	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+		lightPos.x -= cameraSpeed;
+	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+		lightPos.x += cameraSpeed;
+	if (glfwGetKey(window, GLFW_KEY_KP_1) == GLFW_PRESS)
+		lightPos.z -= cameraSpeed;
+	if (glfwGetKey(window, GLFW_KEY_KP_2) == GLFW_PRESS)
+		lightPos.z += cameraSpeed;
 }
