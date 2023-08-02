@@ -36,6 +36,7 @@ float lastFrame = 0.0f;		//上一帧的时间
 
 //光源设置
 glm::vec3 lightPos(1.2f, 1.0f, 2.0f);		//记录光源位置的位移矩阵（给model用的）
+glm::vec3 lightColor;
 
 int main() {
 	// glfw: initialize and configure
@@ -210,12 +211,29 @@ int main() {
 
 		//物体绘制---------------------------------
 		lightingShader.use();   
-		lightingShader.setVec3("objectColor", glm::vec3(1.0f, 0.5f, 0.31f));	//物体设置为珊瑚色
-		lightingShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);					//光源设置为白色
+		//下面的两行被Material和Light设置替代
+		//lightingShader.setVec3("objectColor", glm::vec3(1.0f, 0.5f, 0.31f));	//物体设置为珊瑚色
+		//lightingShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);					//光源设置为白色
 		//实现旋转的自己的方法，保持lightPos不变，时刻计算实际的世界坐标 —— 更直接的方法：直接改变lightPos
 		//lightingShader.setVec3("lightPos", glm::vec3(model * glm::vec4(lightPos,1.0f)));	//设置光源位置（世界坐标变换后的光源，移动版）
 		lightingShader.setVec3("lightPos", lightPos);							//设置光源位置
 		lightingShader.setVec3("viewPos", camera.Position);						//摄像机的世界坐标
+
+		//物体材质设置
+		lightingShader.setVec3("material.ambient", 1.0f, 0.5f, 0.31f);
+		lightingShader.setVec3("material.diffuse", 1.0f, 0.5f, 0.31f);
+		lightingShader.setVec3("material.specular", 0.5f, 0.5f, 0.5f);
+		lightingShader.setFloat("material.shininess", 32.0f);
+
+		//光照强度（各分量强度）设置
+		lightColor.x = sin(glfwGetTime() * 2.0f);
+		lightColor.y = sin(glfwGetTime() * 0.7f);
+		lightColor.z = sin(glfwGetTime() * 1.3f);
+		glm::vec3 diffuseColor = lightColor * glm::vec3(0.5f);		// 降低影响
+		glm::vec3 ambientColor = diffuseColor * glm::vec3(0.2f);	// 很低的影响（保持环境光颜色和漫反射光颜色相同，但影响降低）
+		lightingShader.setVec3("light.ambient", ambientColor);
+		lightingShader.setVec3("light.diffuse", diffuseColor);		
+		lightingShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);	//1.0f的意思：高光按白光算，最后乘物体颜色
 
 		//注意这里的设置不能写到上面光源设置那边，因为那边没有激活lightingShader！！！！
 		lightingShader.setMat4("projection", projection);		//注意要重写一遍
