@@ -189,7 +189,7 @@ int main() {
 	lightingShader.setInt("material.specular", 1);		//设置为TEXTURE1
 	
 	//设置定向光的方向
-	lightingShader.setVec3("light.direction", -0.2f, -1.0f, -0.3f);
+	//lightingShader.setVec3("light.direction", -0.2f, -1.0f, -0.3f);
 
 	//进入渲染循环	
 	//-----------------------------------------------------------
@@ -237,7 +237,7 @@ int main() {
 
 		//物体绘制---------------------------------
 		lightingShader.use();   
-		lightingShader.setVec3("lightPos", lightPos);							//设置光源位置
+		lightingShader.setVec3("light.position", lightPos);							//设置光源位置
 		lightingShader.setVec3("viewPos", camera.Position);						//摄像机的世界坐标
 
 		//光照强度（各分量强度）设置
@@ -245,6 +245,11 @@ int main() {
 		lightingShader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f);		
 		lightingShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);	//1.0f的意思：高光按白光算，最后乘物体颜色
 		
+		//光照衰减设置（按照表格中覆盖50的距离）
+		lightingShader.setFloat("light.constant", 1.0f);
+		lightingShader.setFloat("light.linear", 0.09f);
+		lightingShader.setFloat("light.quadratic", 0.032f);
+
 		//物体材质设置
 		lightingShader.setVec3("material.specular", 0.5f, 0.5f, 0.5f);
 		lightingShader.setFloat("material.shininess", 64.0f);
@@ -254,7 +259,7 @@ int main() {
 		glBindTexture(GL_TEXTURE_2D, diffuseMap);	//里面设置了uniform变量diffuse的值
 
 		//镜面光贴图
-		glActiveTexture(GL_TEXTURE1);
+		glActiveTexture(GL_TEXTURE1);	//激活纹理单元1 —— 即matrial.specular
 		glBindTexture(GL_TEXTURE_2D, specularMap);
 
 		//注意这里的设置不能写到上面光源设置那边，因为那边没有激活lightingShader！！！！
