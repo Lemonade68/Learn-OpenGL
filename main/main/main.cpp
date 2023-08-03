@@ -237,7 +237,15 @@ int main() {
 
 		//物体绘制---------------------------------
 		lightingShader.use();   
-		lightingShader.setVec3("light.position", lightPos);							//设置光源位置
+		//lightingShader.setVec3("light.position", lightPos);							//设置光源位置
+
+		//手电筒中的设置(光从摄像头发出)
+		lightingShader.setVec3("light.position", camera.Position);
+		lightingShader.setVec3("light.direction", camera.Front);
+		//片段着色器中计算出来的点积是一个余弦值而非角度值，因此变成余弦来比较
+		lightingShader.setFloat("light.cutOff", glm::cos(glm::radians(12.5f)));	
+		lightingShader.setFloat("light.outerCutOff", glm::cos(glm::radians(17.5f)));
+		//摄像头设置
 		lightingShader.setVec3("viewPos", camera.Position);						//摄像机的世界坐标
 
 		//光照强度（各分量强度）设置
@@ -250,9 +258,8 @@ int main() {
 		lightingShader.setFloat("light.linear", 0.09f);
 		lightingShader.setFloat("light.quadratic", 0.032f);
 
-		//物体材质设置
-		lightingShader.setVec3("material.specular", 0.5f, 0.5f, 0.5f);
-		lightingShader.setFloat("material.shininess", 64.0f);
+		//物体材质设置（diffuse和specular都留到材质那设置）
+		lightingShader.setFloat("material.shininess", 32.0f);
 		
 		//漫反射贴图
 		glActiveTexture(GL_TEXTURE0);	//激活纹理单元0 —— 即matrial.diffuse

@@ -9,8 +9,10 @@ struct Material{
 };
 
 struct Light{
-	vec3 position;		//定向光不需要(光源的世界坐标)
-//	vec3 direction;		//定向光需要
+	vec3 position;		//平行光不需要(光源的世界坐标)，点光源、聚光需要
+	vec3 direction;		//平行光需要，聚光（手电筒）需要，点光源不需要
+	float cutOff;		//聚光需要，点光源和平行光不需要     ——  内圆锥切光角
+	float outerCutOff;	//外圆锥的切光角（模糊边缘来使用）
 
 	vec3 ambient;		//计算强度后的不同光源的ambient分量
 	vec3 diffuse;
@@ -30,20 +32,26 @@ out vec4 FragColor;
 uniform Material material;
 uniform Light light;
 
-//uniform vec3 objectColor;	//被Material替代
-//uniform vec3 lightColor;	//被Light替代
-//uniform vec3 lightPos;		//光源的世界坐标
 uniform vec3 viewPos;		//摄像机的世界坐标（渲染循环内时刻更新）
 
 void main() {
 	//整体：都是lightColor * objectColor
 
+	//计算光的方向
+	vec3 lightDir = normalize(light.position - FragPos);
+	
 	//定向光的方向
 //	vec3 lightDir = normalize(-light.direction);
 
+	//模拟手电筒：(if结构放在大的框架上，减少非必要的计算)
+	float theta = dot(lightDir,normalize(-light.direction));		//得到的是余弦值
+	float epsilon = light.cutOff - light.outerCutOff;
+	float intensity = clamp((theta - light.outerCutOff)/epsilon, 0.0, 1.0);	//将范围限制在0.0到1.0间
+
+	//注意比较的是cos值，因此是>，theta应该比cutOff要小！（使用了clamp后直接相乘即可，不需要if来比较）
+//	if(theta > light.cutOff) {		
 	//漫反射（注意标准化）
 	vec3 norm = normalize(Normal);	//法线单位化
-	vec3 lightDir = normalize(light.position - FragPos);
 	float diff = max(dot(norm,lightDir), 0);
 	vec3 diffuse = light.diffuse * diff * vec3(texture(material.diffuse,TexCoords));	//从纹理中采取漫反射颜色值
 
@@ -60,10 +68,13 @@ void main() {
 	//考虑衰减
 	float distance = length(light.position - FragPos);
 	float attenuation = 1.0/(light.constant + light.linear * distance + light.quadratic * distance * distance);
-
 	ambient *= attenuation;
 	diffuse *= attenuation;
 	specular *= attenuation;
+
+	//考虑手电(不考虑环境光，使其总能有一点光)
+	diffuse *= intensity;
+	specular *= intensity;
 
 	vec3 lightResult = ambient + diffuse + specular;
 	FragColor = vec4(lightResult, 1.0);
