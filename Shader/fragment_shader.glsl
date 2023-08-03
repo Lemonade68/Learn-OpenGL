@@ -9,7 +9,9 @@ struct Material{
 };
 
 struct Light{
-	vec3 position;
+//	vec3 position;		//定向光不需要
+	vec3 direction;
+
 	vec3 ambient;		//计算强度后的不同光源的ambient分量
 	vec3 diffuse;
 	vec3 specular;
@@ -31,9 +33,12 @@ uniform vec3 viewPos;		//摄像机的世界坐标（渲染循环内时刻更新）
 void main() {
 	//整体：都是lightColor * objectColor
 
+	//定向光的方向
+	vec3 lightDir = normalize(-light.direction);
+
 	//漫反射（注意标准化）
 	vec3 norm = normalize(Normal);	//法线单位化
-	vec3 lightDir = normalize(lightPos - FragPos);
+//	vec3 lightDir = normalize(lightPos - FragPos);
 	float diff = max(dot(norm,lightDir), 0);
 	vec3 diffuse = light.diffuse * diff * vec3(texture(material.diffuse,TexCoords));	//从纹理中采取漫反射颜色值
 
