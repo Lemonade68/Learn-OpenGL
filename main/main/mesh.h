@@ -110,8 +110,11 @@ void Mesh::setupMesh() {
 void Mesh::Draw(Shader shader) {
 	unsigned int diffuseNr = 1;
 	unsigned int specularNr = 1;
+	//----------------------------------------------
 	unsigned int normalNr = 1;
 	unsigned int heightNr = 1;
+	//----------------------------------------------
+
 	for (unsigned int i = 0; i < textures.size(); ++i) {
 		glActiveTexture(GL_TEXTURE0 + i);	//绑定前激活对应纹理单元(从而可以绑定多个纹理)TEXTUREI
 
@@ -122,10 +125,12 @@ void Mesh::Draw(Shader shader) {
 			number = std::to_string(diffuseNr++);
 		else if (name == "texture_specular")
 			number = std::to_string(specularNr++);
+		//----------------------------------------------
 		else if (name == "texture_normal")
 			number = std::to_string(normalNr++); // transfer unsigned int to string
 		else if (name == "texture_height")
 			number = std::to_string(heightNr++); // transfer unsigned int to string
+		//----------------------------------------------
 
 		shader.use();
 		shader.setInt((name + number).c_str(), i);	//告诉openGL当前shader的这个sampler对应TEXTUREI这个纹理单元
