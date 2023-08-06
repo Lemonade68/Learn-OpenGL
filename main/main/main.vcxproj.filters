@@ -32,6 +32,12 @@
     <ClInclude Include="camera.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="mesh.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="model.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\Shader\fragment_shader.glsl">
@@ -44,6 +50,12 @@
       <Filter>资源文件</Filter>
     </None>
     <None Include="..\..\Shader\light_vs.glsl">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\..\Shader\nano_fs.glsl">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\..\Shader\nano_vs.glsl">
       <Filter>资源文件</Filter>
     </None>
   </ItemGroup>
