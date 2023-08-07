@@ -78,19 +78,39 @@ int main() {
 
 	//configure global opengl state
 	//-----------------------------------------------------------
+	//1.模板测试（先进行）
+	glEnable(GL_STENCIL_TEST);
+	//设置掩码
+	//glStencilMask(0xFF);		// 每一位写入模板缓冲时都保持原样（原理：与1位与，默认也是1)
+	//glStencilMask(0x00);		// 每一位在写入模板缓冲时都会变成0（禁用写入）
+	//应该对缓冲内容做什么：glStencilFunc
+	glStencilFunc(GL_NOTEQUAL, 1, 0xFF);		//只有片段的模板值为0时才能通过测试并被绘制
+	
+	//=============================================
+	//体会这两种的差别：
+	//glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);		//被地板遮住时会绘制全绿
+	glStencilOp(GL_KEEP, GL_REPLACE, GL_REPLACE);		//被地板遮住时只绘制边框
+
+	//原理：被地板遮住的物体通不过深度测试，因此会执行第二个参数的要求，接着就好明白了
+	//=============================================
+
+
+	//2.深度测试（后进行）
 	glEnable(GL_DEPTH_TEST);				//设置启用深度测试
 	//glDepthMask(GL_FALSE);				//是否禁用深度缓冲的写入，开启后使用才有效
 	//glDepthFunc(GL_ALWAYS); // always pass the depth test (same effect as glDisable(GL_DEPTH_TEST))
-	glDepthFunc(GL_LESS); // 与正常相同
+	glDepthFunc(GL_LESS); // 与正常相同（更小才会通过测试而被绘制，更远的片段会被丢弃）
 
 	//  **********  深度缓冲中的值在屏幕空间中不是线性的!!!!!!!!!!!!!!!!!
 	// 事实上，近处的物体深度精度大，远处的物体深度精度很小
 	// 实际上就是projection model里面games101讲到的问题，远处的空间会被挤压的更小
 
+
 	//bulid shader program
 	//-----------------------------------------------------------
 	//物体的shader
 	Shader shader("../../Shader/vertex_shader.glsl", "../../Shader/fragment_shader.glsl");
+	Shader shaderSingleColor("../../Shader/stencil_vs.glsl", "../../Shader/stencil_fs.glsl");
 
 	float cubeVertices[] = {
 		// positions          // texture Coords
@@ -201,34 +221,74 @@ int main() {
 		//渲染指令
 		//----------------------------------------
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);	//状态设置
-		//每次渲染迭代前清除深度缓冲&颜色缓冲（否则前一帧的深度信息仍然保存在缓冲中）
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		//每次渲染迭代前清除深度缓冲&颜色缓冲&模板缓冲（否则前一帧的深度信息仍然保存在缓冲中）
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+		// ********************* 注意看后面的glStencilMask(0xFF)的作用
 
-		shader.use();
+		// set uniforms
+		shaderSingleColor.use();
 		glm::mat4 model = glm::mat4(1.0f);
 		glm::mat4 view = camera.GetViewMatrix();
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+		shaderSingleColor.setMat4("view", view);
+		shaderSingleColor.setMat4("projection", projection);
+
+		shader.use();
 		shader.setMat4("view", view);
 		shader.setMat4("projection", projection);
 		
-		// cubes
-		glBindVertexArray(cubeVAO);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, cubeTexture);
-		model = glm::translate(model, glm::vec3(-1.0f, 0.0f, -1.0f));
-		shader.setMat4("model", model);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(2.0f, 0.0f, 0.0f));
-		shader.setMat4("model", model);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-		
-		// floor
+		//1.开始时绘制地板 —— 不需要边框，因此设置不经过模板缓冲
+		glStencilMask(0x00);		//禁用写入
+
 		glBindVertexArray(planeVAO);
+		glActiveTexture(GL_TEXTURE0);		//这里可以没有（默认激活0）
 		glBindTexture(GL_TEXTURE_2D, floorTexture);
 		shader.setMat4("model", glm::mat4(1.0f));
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		glBindVertexArray(0);
+
+		//2.绘制物体，但是要经过模板测试，修改stencil buffer
+		glStencilMask(0xFF);	//允许写入
+		glStencilFunc(GL_ALWAYS, 1, 0xFF);		//只要进行绘制，都永远通过，且更改模板值为1（op规定的）
+
+		glBindVertexArray(cubeVAO);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, cubeTexture);
+		model = glm::translate(model, glm::vec3(-1.0f, -0.5f, -1.0f));
+		shader.setMat4("model", model);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(2.0f, -0.5f, 0.0f));
+		shader.setMat4("model", model);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+
+		//将物体放大一点点后绘制（禁止写入模板值），只有非1的位置会被绘制，达到边缘效果
+		glStencilFunc(GL_NOTEQUAL, 1, 0xFF);	//不为1的才能绘制（对于屏幕而言 —— 所以不是整个覆盖在外面而是边缘）
+		glStencilMask(0x00);					//禁止写入模板值（防止绘制成功时模板值被op改成1）
+		glDisable(GL_DEPTH_TEST);				//禁用深度测试，从而边框可以透视
+		shaderSingleColor.use();
+		float scale = 1.05f;
+
+		// cubes
+		glBindVertexArray(cubeVAO);
+		glBindTexture(GL_TEXTURE_2D, cubeTexture);
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-1.0f, -0.5f, -1.0f));
+		model = glm::scale(model, glm::vec3(scale));		//新增的scale
+		shaderSingleColor.setMat4("model", model);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(2.0f, -0.5f, 0.0f));
+		model = glm::scale(model, glm::vec3(scale));		//新增的scale
+		shaderSingleColor.setMat4("model", model);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glBindVertexArray(0);
+		
+		//恢复到默认状态
+		glStencilMask(0xFF);		//恢复成可写，这样的话渲染循环中的glClear才能清除模板缓存
+		glStencilFunc(GL_ALWAYS, 0, 0xFF);
+		glEnable(GL_DEPTH_TEST);
 
 		//检查并调用事件，交换缓冲
 		//----------------------------------------
