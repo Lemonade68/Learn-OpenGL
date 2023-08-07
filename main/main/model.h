@@ -64,7 +64,7 @@ void Model::loadModel(string path) {
 		std::cout << "ERROR:ASSIMP::" << import.GetErrorString() << std::endl;
 		return;
 	}
-	//保存相对地址的目录
+	//保存相对地址的目录（因为后面的纹理的路径都是以directory开头）
 	directory = path.substr(0, path.find_last_of('/'));
 
 	//处理场景中的所有结点（通过递归函数）
@@ -76,6 +76,7 @@ void Model::processNode(aiNode *node, const aiScene *scene) {
 	for (unsigned int i = 0; i < node->mNumMeshes; ++i) {
 		// the node object only contains indices to index the actual objects in the scene. 
 		// the scene contains all the data, node is just to keep stuff organized (like relations between nodes).
+		// 这里node只保存了mesh的索引，真正的mesh保留在scene里
 		aiMesh *mesh = scene->mMeshes[node->mMeshes[i]];
 		meshes.push_back(processMesh(mesh, scene));
 	}
@@ -114,6 +115,7 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene) {
 			glm::vec2 vec;
 			vec.x = mesh->mTextureCoords[0][i].x;
 			vec.y = mesh->mTextureCoords[0][i].y;
+			//这里直接用vertex.TexCoords = vec 会报错，似乎没有重载这个=
 			vertex.TexCoords.x = vec.x;
 			vertex.TexCoords.y = vec.y;
 		}
@@ -125,7 +127,7 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene) {
 		vertices.push_back(vertex);
 	}
 
-	//处理索引
+	//处理索引，每一个face面都包含一组索引（这里是三角形的三个顶点）
 	for (unsigned int i = 0; i < mesh->mNumFaces; ++i) {
 		aiFace face = mesh->mFaces[i];
 		for (unsigned int j = 0; j < face.mNumIndices; ++j)
@@ -154,11 +156,13 @@ vector<Texture> Model::loadMaterialTextures(aiMaterial *mat, aiTextureType type,
 	vector<Texture> textures;
 	for (unsigned int i = 0; i < mat->GetTextureCount(type); ++i) {
 		aiString str;
-		mat->GetTexture(type, i, &str);
+		mat->GetTexture(type, i, &str);		//获得每个纹理的存储位置，并存在str中
 
+		//遍历已经加载过的纹理，看该纹理是否已经被加载过
 		bool skip = false;
 		for (unsigned int j = 0; j < textures_loaded.size(); ++j) {
-			if (std::strcmp(textures_loaded[j].path.data(), str.C_Str()) == 0) {		//string.data()和string.c_str()一样
+			//string.data()和string.c_str()一样
+			if (std::strcmp(textures_loaded[j].path.data(), str.C_Str()) == 0) {		
 				textures.push_back(textures_loaded[j]);
 				skip = true;
 				break;
@@ -177,7 +181,7 @@ vector<Texture> Model::loadMaterialTextures(aiMaterial *mat, aiTextureType type,
 }
 
 unsigned int TextureFromFile(const char *path, const string &directory, bool gamma) {
-	//默认模型文件中纹理文件的路径是相对路径
+	//默认模型文件中纹理文件的路径是相对于模型文件的本地路径（所以用外部的路径加上本地的路径）
 	string filename = string(path);
 	filename = directory + '/' + filename;
 
