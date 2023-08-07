@@ -49,12 +49,12 @@ public:
 	unsigned int VAO;
 	//函数
 	Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<Texture> textures);
-	void Draw(Shader shader);		//最终绘制网格
+	void Draw(Shader shader);		//最终绘制网格，设置纹理，绘制图形
 private:
 	//渲染数据
 	unsigned int VBO, EBO;
 	//函数
-	void setupMesh();			//初始化缓冲
+	void setupMesh();			//初始化缓冲，设置VAO,VBO,EBO等
 
 };
 
@@ -84,6 +84,7 @@ void Mesh::setupMesh() {
 	glEnableVertexAttribArray(0);
 	//顶点法线
 	//offset两个参数：结构体和变量名，返回变量距结构体头部的字节偏移量
+	//这样写的好处：方便之后拓展 —— 例如新增部分，直接在offset后面加上Vertex和新增的名字就行
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Normal));
 	glEnableVertexAttribArray(1);
 	//顶点纹理坐标
@@ -133,7 +134,10 @@ void Mesh::Draw(Shader shader) {
 		//----------------------------------------------
 
 		shader.use();
+		//这里：Draw函数中会进行全部的设置，但是在fragment shader中是否存在这个uniform变量未知：如果存在，会进行设置，不存在：不会进行设置
+		//例如：生成的texture_diffuse1存在，会进行设置；texture_height1不存在，设置无效
 		shader.setInt((name + number).c_str(), i);	//告诉openGL当前shader的这个sampler对应TEXTUREI这个纹理单元
+
 		glBindTexture(GL_TEXTURE_2D, textures[i].id);		//将textures[i]表示的纹理绑定到当前纹理单元TEXTUREI上
 	}
 	glBindVertexArray(VAO);

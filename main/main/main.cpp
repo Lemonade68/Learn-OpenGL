@@ -213,6 +213,9 @@ int main() {
 		//每次渲染迭代前清除深度缓冲&颜色缓冲（否则前一帧的深度信息仍然保存在缓冲中）
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		//是否禁用深度缓冲的写入
+		//glDepthMask(GL_FALSE);
+
 		//画模型物体
 		ourShader.use();
 

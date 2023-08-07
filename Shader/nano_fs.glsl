@@ -49,6 +49,7 @@ out vec4 FragColor;
 
 uniform vec3 viewPos;
 
+//注意使用的命名规范
 uniform sampler2D texture_diffuse1;		//漫反射材质
 uniform sampler2D texture_specular1;	//镜面反射材质
 
