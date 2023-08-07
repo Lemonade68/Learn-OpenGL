@@ -89,6 +89,7 @@ int main() {
 
 	//加载模型
 	Model ourModel("../../Models/nanosuit/nanosuit.obj");
+	Model Model2("../../Models/planet/planet.obj");
 
 	float vertices[] = {
 		// positions          // normals           // texture coords
@@ -288,6 +289,12 @@ int main() {
 		model = glm::scale(model, glm::vec3(0.1f));	// it's a bit too big for our scene, so scale it down
 		ourShader.setMat4("model", model);
 		ourModel.Draw(ourShader);
+
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(2.0f, 0.0f, 0.0f));
+		model = glm::scale(model, glm::vec3(0.3f));
+		ourShader.setMat4("model", model);
+		Model2.Draw(ourShader);
 
 		//画箱子
 		lightingShader.use();
