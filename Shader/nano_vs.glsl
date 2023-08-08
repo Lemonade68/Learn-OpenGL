@@ -13,7 +13,6 @@ uniform mat4 projection;
 
 void main()
 {
-    TexCoords = aTexCoords;    
     gl_Position = projection * view * model * vec4(aPos, 1.0);
 
 	FragPos = vec3(model * vec4(aPos,1.0));					//顶点变换到世界坐标

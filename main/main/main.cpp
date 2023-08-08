@@ -117,60 +117,63 @@ int main() {
 	//物体的shader
 	Shader shader("../../Shader/vertex_shader.glsl", "../../Shader/fragment_shader.glsl");
 	Shader shaderSingleColor("../../Shader/stencil_vs.glsl", "../../Shader/stencil_fs.glsl");
+	Shader lightCubeShader("../../Shader/light_vs.glsl", "../../Shader/light_fs.glsl");
+	Shader transparentShader("../../Shader/basic_vs.glsl", "../../Shader/basic_fs.glsl");
 
 	float cubeVertices[] = {
-		// positions          // texture Coords
-		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-		 0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+		// positions          // normals           // texture coords
+		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
+		 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  0.0f,
+		 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
+		 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
+		-0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  1.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
 
-		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-		 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-		 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-		-0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
+		 0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  0.0f,
+		 0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
+		 0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
+		-0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  1.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
 
-		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-		-0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+		-0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
+		-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+		-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+		-0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
+		-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
 
-		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		 0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
+		 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+		 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+		 0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
 
-		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		 0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
+		 0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  1.0f,
+		 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
+		 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  0.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
 
-		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-		-0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,
+		 0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  1.0f,
+		 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
+		 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
+		-0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  0.0f,
+		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f
 	};
-	float planeVertices[] = {
-		// positions          // texture Coords (note we set these higher than 1 (together with GL_REPEAT as texture wrapping mode). this will cause the floor texture to repeat)
-		 5.0f, -0.5f,  5.0f,  2.0f, 0.0f,
-		-5.0f, -0.5f,  5.0f,  0.0f, 0.0f,
-		-5.0f, -0.5f, -5.0f,  0.0f, 2.0f,
 
-		 5.0f, -0.5f,  5.0f,  2.0f, 0.0f,
-		-5.0f, -0.5f, -5.0f,  0.0f, 2.0f,
-		 5.0f, -0.5f, -5.0f,  2.0f, 2.0f
+	float planeVertices[] = {
+		// positions		  //Normals			// texture Coords (note we set these higher than 1 (together with GL_REPEAT as texture wrapping mode). this will cause the floor texture to repeat)
+		 5.0f, -0.5f,  5.0f,  0.0f, 1.0f, 0.0f, 2.0f, 0.0f,
+		-5.0f, -0.5f,  5.0f,  0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+		-5.0f, -0.5f, -5.0f,  0.0f, 1.0f, 0.0f, 0.0f, 2.0f,
+
+		 5.0f, -0.5f,  5.0f,  0.0f, 1.0f, 0.0f, 2.0f, 0.0f,
+		-5.0f, -0.5f, -5.0f,  0.0f, 1.0f, 0.0f, 0.0f, 2.0f,
+		 5.0f, -0.5f, -5.0f,  0.0f, 1.0f, 0.0f, 2.0f, 2.0f
 	};
 
 	float transparentVertices[] = {
@@ -184,13 +187,20 @@ int main() {
 		1.0f,  0.5f,  0.0f,  1.0f,  0.0f
 	};
 
-	//透明的草的位置
+	//透明纹理的位置
 	vector<glm::vec3> windows;
 	windows.push_back(glm::vec3(-1.5f, 0.0f, -0.48f));
 	windows.push_back(glm::vec3(1.5f, 0.0f, 0.51f));
 	windows.push_back(glm::vec3(0.0f, 0.0f, 0.7f));
 	windows.push_back(glm::vec3(-0.3f, 0.0f, -2.3f));
 	windows.push_back(glm::vec3(0.5f, 0.0f, -0.6f));
+
+	glm::vec3 pointLightPositions[] = {
+		glm::vec3(0.7f,  0.2f,  2.0f),
+		glm::vec3(2.3f, -3.3f, -4.0f),
+		glm::vec3(0.0f,  2.0f, -2.0f),
+		glm::vec3(0.0f,  0.0f, -3.0f)
+	};
 
 	// cube VAO
 	unsigned int cubeVAO, cubeVBO;
@@ -199,11 +209,22 @@ int main() {
 	glBindVertexArray(cubeVAO);
 	glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), &cubeVertices, GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+	glEnableVertexAttribArray(2);
 	glBindVertexArray(0);
+
+	//光源
+	unsigned int lightCubeVAO;
+	glGenVertexArrays(1, &lightCubeVAO);
+	glBindVertexArray(lightCubeVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), &cubeVertices, GL_STATIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
 	
 	// plane VAO
 	unsigned int planeVAO, planeVBO;
@@ -213,9 +234,11 @@ int main() {
 	glBindBuffer(GL_ARRAY_BUFFER, planeVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(planeVertices), &planeVertices, GL_STATIC_DRAW);
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
 	glBindVertexArray(0);
 
 	// transparent VAO
@@ -242,6 +265,8 @@ int main() {
 	// --------------------
 	shader.use();
 	shader.setInt("texture1", 0);
+	transparentShader.use();
+	transparentShader.setInt("texture1", 0);
 
 	//是否使用线框模式
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -274,10 +299,64 @@ int main() {
 		shaderSingleColor.setMat4("view", view);
 		shaderSingleColor.setMat4("projection", projection);
 
+		transparentShader.use();
+		transparentShader.setMat4("view", view);
+		transparentShader.setMat4("projection", projection);
+
 		shader.use();
 		shader.setMat4("view", view);
 		shader.setMat4("projection", projection);
+		shader.setVec3("viewPos", camera.Position);
+
+		// directional light
+		shader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
+		shader.setVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
+		shader.setVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
+		shader.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
 		
+		// movable light
+		shader.setVec3("moveableLight.position", lightPos);
+		shader.setVec3("moveableLight.ambient", 0.05f, 0.05f, 0.05f);
+		shader.setVec3("moveableLight.diffuse", 0.8f, 0.8f, 0.8f);
+		shader.setVec3("moveableLight.specular", 1.0f, 1.0f, 1.0f);
+		shader.setFloat("moveableLight.constant", 1.0f);
+		shader.setFloat("moveableLight.linear", 0.09f);
+		shader.setFloat("moveableLight.quadratic", 0.032f);
+
+		// point light 1
+		shader.setVec3("pointLights[0].position", pointLightPositions[0]);
+		shader.setVec3("pointLights[0].ambient", 0.05f, 0.05f, 0.05f);
+		shader.setVec3("pointLights[0].diffuse", 0.8f, 0.8f, 0.8f);
+		shader.setVec3("pointLights[0].specular", 1.0f, 1.0f, 1.0f);
+		shader.setFloat("pointLights[0].constant", 1.0f);
+		shader.setFloat("pointLights[0].linear", 0.09f);
+		shader.setFloat("pointLights[0].quadratic", 0.032f);
+		// point light 2
+		shader.setVec3("pointLights[1].position", pointLightPositions[1]);
+		shader.setVec3("pointLights[1].ambient", 0.05f, 0.05f, 0.05f);
+		shader.setVec3("pointLights[1].diffuse", 0.8f, 0.8f, 0.8f);
+		shader.setVec3("pointLights[1].specular", 1.0f, 1.0f, 1.0f);
+		shader.setFloat("pointLights[1].constant", 1.0f);
+		shader.setFloat("pointLights[1].linear", 0.09f);
+		shader.setFloat("pointLights[1].quadratic", 0.032f);
+		// point light 3
+		shader.setVec3("pointLights[2].position", pointLightPositions[2]);
+		shader.setVec3("pointLights[2].ambient", 0.05f, 0.05f, 0.05f);
+		shader.setVec3("pointLights[2].diffuse", 0.8f, 0.8f, 0.8f);
+		shader.setVec3("pointLights[2].specular", 1.0f, 1.0f, 1.0f);
+		shader.setFloat("pointLights[2].constant", 1.0f);
+		shader.setFloat("pointLights[2].linear", 0.09f);
+		shader.setFloat("pointLights[2].quadratic", 0.032f);
+		// point light 4
+		shader.setVec3("pointLights[3].position", pointLightPositions[3]);
+		shader.setVec3("pointLights[3].ambient", 0.05f, 0.05f, 0.05f);
+		shader.setVec3("pointLights[3].diffuse", 0.8f, 0.8f, 0.8f);
+		shader.setVec3("pointLights[3].specular", 1.0f, 1.0f, 1.0f);
+		shader.setFloat("pointLights[3].constant", 1.0f);
+		shader.setFloat("pointLights[3].linear", 0.09f);
+		shader.setFloat("pointLights[3].quadratic", 0.032f);
+
+
 		//先画所有不透明的物体
 		//1.开始时绘制地板 —— 不需要边框，因此设置不经过模板缓冲
 		glStencilMask(0x00);		//禁用写入
@@ -326,12 +405,35 @@ int main() {
 		shaderSingleColor.setMat4("model", model);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		glBindVertexArray(0);
-
-		//画窗户
-		glStencilMask(0x00);
-		glStencilFunc(GL_ALWAYS, 1, 0xFF);
+		
+		//恢复到默认状态
+		glStencilMask(0xFF);		//恢复成可写，这样的话渲染循环中的glClear才能清除模板缓存
+		glStencilFunc(GL_ALWAYS, 0, 0xFF);
 		glEnable(GL_DEPTH_TEST);
 
+		//画点光源物体
+		// also draw the lamp object(s)
+		lightCubeShader.use();
+		lightCubeShader.setMat4("projection", projection);
+		lightCubeShader.setMat4("view", view);
+
+		// we now draw as many light bulbs as we have point lights.
+		glBindVertexArray(lightCubeVAO);
+		for (unsigned int i = 0; i < 4; i++) {
+			model = glm::mat4(1.0f);
+			model = glm::translate(model, pointLightPositions[i]);
+			model = glm::scale(model, glm::vec3(0.2f)); // Make it a smaller cube
+			lightCubeShader.setMat4("model", model);
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
+
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, lightPos);
+		model = glm::scale(model, glm::vec3(0.2f)); // Make it a smaller cube
+		lightCubeShader.setMat4("model", model);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		//画窗户
 		//记录距离位置
 		std::map<float, glm::vec3> sorted;
 		for (unsigned int i = 0; i < windows.size(); i++) {
@@ -339,13 +441,13 @@ int main() {
 			sorted[distance] = windows[i];
 		}
 
-		shader.use();
+		transparentShader.use();
 		glBindVertexArray(transparentVAO);
 		glBindTexture(GL_TEXTURE_2D, transparentTexture);
 		for (std::map<float, glm::vec3>::reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it) {
 			model = glm::mat4(1.0f);
 			model = glm::translate(model, it->second);
-			shader.setMat4("model", model);
+			transparentShader.setMat4("model", model);
 			glDrawArrays(GL_TRIANGLES, 0, 6);
 
 			//会有点小问题（因为一个窗户它默认所有地方都是同一个位置）
@@ -357,10 +459,6 @@ int main() {
 			shader.setMat4("model", model);
 			glDrawArrays(GL_TRIANGLES, 0, 6);*/
 		}
-		//恢复到默认状态
-		glStencilMask(0xFF);		//恢复成可写，这样的话渲染循环中的glClear才能清除模板缓存
-		glStencilFunc(GL_ALWAYS, 0, 0xFF);
-		glEnable(GL_DEPTH_TEST);
 
 		//检查并调用事件，交换缓冲
 		//----------------------------------------

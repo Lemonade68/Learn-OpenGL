@@ -154,6 +154,8 @@
     <ClInclude Include="stb_image.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\Shader\basic_fs.glsl" />
+    <None Include="..\..\Shader\basic_vs.glsl" />
     <None Include="..\..\Shader\fragment_shader.glsl" />
     <None Include="..\..\Shader\light_fs.glsl" />
     <None Include="..\..\Shader\light_vs.glsl" />
