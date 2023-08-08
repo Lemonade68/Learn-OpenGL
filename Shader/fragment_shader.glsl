@@ -14,6 +14,9 @@ float LinearizeDepth(float depth) {
 uniform sampler2D texture1;
 
 void main() {    
+	vec4 texColor = texture(texture1, TexCoords);
+	if(texColor.a < 0.2)			//丢弃透明度小于0.1的部分（90%以上透明的部分）
+		discard;
     FragColor = texture(texture1, TexCoords);
 
 	//非线性化的z值处理结果-----------------------------------------------------

@@ -81,7 +81,7 @@ int main() {
 	//1.模板测试（先进行）
 	glEnable(GL_STENCIL_TEST);
 	//设置掩码
-	//glStencilMask(0xFF);		// 每一位写入模板缓冲时都保持原样（原理：与1位与，默认也是1)
+	//glStencilMask(0xFF);		// 启用写入，每一位写入模板缓冲时都保持原样（原理：与1位与，默认也是1)
 	//glStencilMask(0x00);		// 每一位在写入模板缓冲时都会变成0（禁用写入）
 	//应该对缓冲内容做什么：glStencilFunc
 	glStencilFunc(GL_NOTEQUAL, 1, 0xFF);		//只有片段的模板值为0时才能通过测试并被绘制
@@ -104,6 +104,10 @@ int main() {
 	//  **********  深度缓冲中的值在屏幕空间中不是线性的!!!!!!!!!!!!!!!!!
 	// 事实上，近处的物体深度精度大，远处的物体深度精度很小
 	// 实际上就是projection model里面games101讲到的问题，远处的空间会被挤压的更小
+
+	//混合
+	glEnable(GL_BLEND);
+
 
 
 	//bulid shader program
@@ -167,6 +171,25 @@ int main() {
 		 5.0f, -0.5f, -5.0f,  2.0f, 2.0f
 	};
 
+	float transparentVertices[] = {
+		// positions         // texture Coords (swapped y coordinates because texture is flipped upside down)
+		0.0f,  0.5f,  0.0f,  0.0f,  0.0f,
+		0.0f, -0.5f,  0.0f,  0.0f,  1.0f,
+		1.0f, -0.5f,  0.0f,  1.0f,  1.0f,
+
+		0.0f,  0.5f,  0.0f,  0.0f,  0.0f,
+		1.0f, -0.5f,  0.0f,  1.0f,  1.0f,
+		1.0f,  0.5f,  0.0f,  1.0f,  0.0f
+	};
+
+	//透明的草的位置
+	vector<glm::vec3> vegetation;
+	vegetation.push_back(glm::vec3(-1.5f, 0.0f, -0.48f));
+	vegetation.push_back(glm::vec3(1.5f, 0.0f, 0.51f));
+	vegetation.push_back(glm::vec3(0.0f, 0.0f, 0.7f));
+	vegetation.push_back(glm::vec3(-0.3f, 0.0f, -2.3f));
+	vegetation.push_back(glm::vec3(0.5f, 0.0f, -0.6f));
+
 	// cube VAO
 	unsigned int cubeVAO, cubeVBO;
 	glGenVertexArrays(1, &cubeVAO);
@@ -193,10 +216,25 @@ int main() {
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 	glBindVertexArray(0);
 
+	// transparent VAO
+	unsigned int transparentVAO, transparentVBO;
+	glGenVertexArrays(1, &transparentVAO);
+	glGenBuffers(1, &transparentVBO);
+	glBindVertexArray(transparentVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, transparentVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(transparentVertices), transparentVertices, GL_STATIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	glBindVertexArray(0);
+
 	// load textures (we now use a utility function to keep the code more organized)
    // -----------------------------------------------------------------------------
 	unsigned int cubeTexture = loadTexture("../../Textures/marble.jpg");
 	unsigned int floorTexture = loadTexture("../../Textures/metal.png");
+	unsigned int transparentTexture = loadTexture("../../Textures/grass.png");
+
 	// shader configuration
 	// --------------------
 	shader.use();
@@ -247,6 +285,29 @@ int main() {
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		glBindVertexArray(0);
 
+		//画草
+		glStencilMask(0x00);
+		glStencilFunc(GL_ALWAYS, 1, 0xFF);
+		glEnable(GL_DEPTH_TEST);
+		shader.use();
+		glBindVertexArray(transparentVAO);
+		glBindTexture(GL_TEXTURE_2D, transparentTexture);
+		for (unsigned int i = 0; i < vegetation.size(); i++) {
+			model = glm::mat4(1.0f);
+			model = glm::translate(model, vegetation[i]);
+			shader.setMat4("model", model);
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+			
+			//垂直再画一个，形成一个草的四边形，从而达到立体效果
+			model = glm::mat4(1.0f);
+			model = glm::translate(model, glm::vec3(0.5f, 0.0f, 0.0f));		
+			model = glm::translate(model, vegetation[i]);
+			model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+			model = glm::translate(model, glm::vec3(-0.5f, 0.0f, 0.0f));
+			shader.setMat4("model", model);
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+		}
+
 		//2.绘制物体，但是要经过模板测试，修改stencil buffer
 		glStencilMask(0xFF);	//允许写入
 		glStencilFunc(GL_ALWAYS, 1, 0xFF);		//只要进行绘制，都永远通过，且更改模板值为1（op规定的）
@@ -254,6 +315,7 @@ int main() {
 		glBindVertexArray(cubeVAO);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, cubeTexture);
+		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(-1.0f, -0.5f, -1.0f));
 		shader.setMat4("model", model);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -284,7 +346,7 @@ int main() {
 		shaderSingleColor.setMat4("model", model);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		glBindVertexArray(0);
-		
+
 		//恢复到默认状态
 		glStencilMask(0xFF);		//恢复成可写，这样的话渲染循环中的glClear才能清除模板缓存
 		glStencilFunc(GL_ALWAYS, 0, 0xFF);
@@ -396,8 +458,9 @@ unsigned int loadTexture(char const * path)
 		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
 
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		//注意新的变化 —— 如果是repeat，会导致上面的透明部分和底下的纯色部分进行混色，从而出现很窄的边框
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
