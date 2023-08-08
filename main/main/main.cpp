@@ -105,9 +105,11 @@ int main() {
 	// 事实上，近处的物体深度精度大，远处的物体深度精度很小
 	// 实际上就是projection model里面games101讲到的问题，远处的空间会被挤压的更小
 
-	//混合
+	//3.混合（最后进行）
+	//效果：使得每当OpenGL渲染了一个片段时，它都会将当前片段的颜色和当前颜色缓冲中的片段颜色根据alpha值来进行混合
 	glEnable(GL_BLEND);
-
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);		//设置因子
+	//问题：深度测试时不会考虑透明的问题，因此需要考虑前后距离的问题来解决半透明物体不显示后方物体的问题
 
 
 	//bulid shader program
@@ -183,12 +185,12 @@ int main() {
 	};
 
 	//透明的草的位置
-	vector<glm::vec3> vegetation;
-	vegetation.push_back(glm::vec3(-1.5f, 0.0f, -0.48f));
-	vegetation.push_back(glm::vec3(1.5f, 0.0f, 0.51f));
-	vegetation.push_back(glm::vec3(0.0f, 0.0f, 0.7f));
-	vegetation.push_back(glm::vec3(-0.3f, 0.0f, -2.3f));
-	vegetation.push_back(glm::vec3(0.5f, 0.0f, -0.6f));
+	vector<glm::vec3> windows;
+	windows.push_back(glm::vec3(-1.5f, 0.0f, -0.48f));
+	windows.push_back(glm::vec3(1.5f, 0.0f, 0.51f));
+	windows.push_back(glm::vec3(0.0f, 0.0f, 0.7f));
+	windows.push_back(glm::vec3(-0.3f, 0.0f, -2.3f));
+	windows.push_back(glm::vec3(0.5f, 0.0f, -0.6f));
 
 	// cube VAO
 	unsigned int cubeVAO, cubeVBO;
@@ -233,7 +235,8 @@ int main() {
    // -----------------------------------------------------------------------------
 	unsigned int cubeTexture = loadTexture("../../Textures/marble.jpg");
 	unsigned int floorTexture = loadTexture("../../Textures/metal.png");
-	unsigned int transparentTexture = loadTexture("../../Textures/grass.png");
+	//unsigned int transparentTexture = loadTexture("../../Textures/grass.png");
+	unsigned int transparentTexture = loadTexture("../../Textures/window.png");
 
 	// shader configuration
 	// --------------------
@@ -275,6 +278,7 @@ int main() {
 		shader.setMat4("view", view);
 		shader.setMat4("projection", projection);
 		
+		//先画所有不透明的物体
 		//1.开始时绘制地板 —— 不需要边框，因此设置不经过模板缓冲
 		glStencilMask(0x00);		//禁用写入
 
@@ -284,29 +288,6 @@ int main() {
 		shader.setMat4("model", glm::mat4(1.0f));
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		glBindVertexArray(0);
-
-		//画草
-		glStencilMask(0x00);
-		glStencilFunc(GL_ALWAYS, 1, 0xFF);
-		glEnable(GL_DEPTH_TEST);
-		shader.use();
-		glBindVertexArray(transparentVAO);
-		glBindTexture(GL_TEXTURE_2D, transparentTexture);
-		for (unsigned int i = 0; i < vegetation.size(); i++) {
-			model = glm::mat4(1.0f);
-			model = glm::translate(model, vegetation[i]);
-			shader.setMat4("model", model);
-			glDrawArrays(GL_TRIANGLES, 0, 6);
-			
-			//垂直再画一个，形成一个草的四边形，从而达到立体效果
-			model = glm::mat4(1.0f);
-			model = glm::translate(model, glm::vec3(0.5f, 0.0f, 0.0f));		
-			model = glm::translate(model, vegetation[i]);
-			model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-			model = glm::translate(model, glm::vec3(-0.5f, 0.0f, 0.0f));
-			shader.setMat4("model", model);
-			glDrawArrays(GL_TRIANGLES, 0, 6);
-		}
 
 		//2.绘制物体，但是要经过模板测试，修改stencil buffer
 		glStencilMask(0xFF);	//允许写入
@@ -323,7 +304,6 @@ int main() {
 		model = glm::translate(model, glm::vec3(2.0f, -0.5f, 0.0f));
 		shader.setMat4("model", model);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
-
 
 		//将物体放大一点点后绘制（禁止写入模板值），只有非1的位置会被绘制，达到边缘效果
 		glStencilFunc(GL_NOTEQUAL, 1, 0xFF);	//不为1的才能绘制（对于屏幕而言 —— 所以不是整个覆盖在外面而是边缘）
@@ -347,6 +327,36 @@ int main() {
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		glBindVertexArray(0);
 
+		//画窗户
+		glStencilMask(0x00);
+		glStencilFunc(GL_ALWAYS, 1, 0xFF);
+		glEnable(GL_DEPTH_TEST);
+
+		//记录距离位置
+		std::map<float, glm::vec3> sorted;
+		for (unsigned int i = 0; i < windows.size(); i++) {
+			float distance = glm::length(camera.Position - windows[i]);
+			sorted[distance] = windows[i];
+		}
+
+		shader.use();
+		glBindVertexArray(transparentVAO);
+		glBindTexture(GL_TEXTURE_2D, transparentTexture);
+		for (std::map<float, glm::vec3>::reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it) {
+			model = glm::mat4(1.0f);
+			model = glm::translate(model, it->second);
+			shader.setMat4("model", model);
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+
+			//会有点小问题（因为一个窗户它默认所有地方都是同一个位置）
+			/*model = glm::mat4(1.0f);
+			model = glm::translate(model, glm::vec3(0.5f, 0.0f, 0.0f));
+			model = glm::translate(model, it->second);
+			model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+			model = glm::translate(model, glm::vec3(-0.5f, 0.0f, 0.0f));
+			shader.setMat4("model", model);
+			glDrawArrays(GL_TRIANGLES, 0, 6);*/
+		}
 		//恢复到默认状态
 		glStencilMask(0xFF);		//恢复成可写，这样的话渲染循环中的glClear才能清除模板缓存
 		glStencilFunc(GL_ALWAYS, 0, 0xFF);
