@@ -367,6 +367,10 @@ int main() {
 	glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
 	//** 这边，选择屏幕的长度和宽度，然后数据填NULL，只是分配空间，暂时没有存放颜色数据，之后渲染时会输入进去
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	//使用核进行采样时使用 ==================================================
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);	
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	//====================================================================
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	//将颜色附件附到framebuffer上
