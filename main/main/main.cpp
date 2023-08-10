@@ -129,7 +129,11 @@ int main() {
 	//物体的shader
 	Shader shader("../../Shader/vertex_shader.glsl", "../../Shader/fragment_shader.glsl");
 	Shader shaderSingleColor("../../Shader/stencil_vs.glsl", "../../Shader/stencil_fs.glsl");
+	
+	//光源shader
 	Shader lightCubeShader("../../Shader/light_vs.glsl", "../../Shader/light_fs.glsl");
+	
+	//透明/半透明物体shader
 	Shader transparentShader("../../Shader/basic_vs.glsl", "../../Shader/basic_fs.glsl");
 	
 	//最简单的shader，因为只需要画出一个四边形之后，把帧缓冲的颜色缓冲附件(texture)贴上去就行
@@ -137,6 +141,13 @@ int main() {
 
 	//天空盒shader
 	Shader skyboxShader("../../Shader/skybox_vs.glsl", "../../Shader/skybox_fs.glsl");
+
+	//反射盒shader
+	Shader reflectShader("../../Shader/reflectbox_vs.glsl", "../../Shader/reflectbox_fs.glsl");
+
+	//物体模型
+	Model ourModel("../../Models/nanosuit/nanosuit.obj");
+	Shader modelShader("../../Shader/nano_vs.glsl", "../../Shader/nano_fs.glsl");
 
 	float cubeVertices[] = {
 		// positions          // normals           // texture coords
@@ -262,6 +273,51 @@ int main() {
 		 1.0f, -1.0f,  1.0f
 	};
 
+	//反射盒的顶点数据  顶点+法线
+	float reflectVertices[] = {
+	-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+	 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+	 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+	 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+	-0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+
+	-0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+	 0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+	 0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+	 0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+	-0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+	-0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+
+	-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+	-0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+	-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+	-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+	-0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+	-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+
+	 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+	 0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+	 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+	 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+	 0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+
+	-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+	 0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+	 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+	 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+	-0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+
+	-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+	 0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+	 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+	 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+	-0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+	-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
+	};
+
 	//透明纹理的位置
 	vector<glm::vec3> windows;
 	windows.push_back(glm::vec3(-1.5f, 0.0f, -0.48f));
@@ -351,6 +407,17 @@ int main() {
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
+	//reflectVAO
+	unsigned int reflectVAO, reflectVBO;
+	glGenVertexArrays(1, &reflectVAO);
+	glGenBuffers(1, &reflectVBO);
+	glBindVertexArray(reflectVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, reflectVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(reflectVertices), &reflectVertices, GL_STATIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
 
 	// load textures (we now use a utility function to keep the code more organized)
 	// -----------------------------------------------------------------------------
@@ -383,6 +450,12 @@ int main() {
 
 	skyboxShader.use();
 	skyboxShader.setInt("skybox", 0);
+
+	reflectShader.use();
+	reflectShader.setInt("skybox", 0);
+
+	modelShader.use();
+	modelShader.setInt("skybox", 0);
 
 	//framebuffer configuration
 	unsigned int framebuffer;
@@ -477,6 +550,15 @@ int main() {
 		transparentShader.use();
 		transparentShader.setMat4("view", view);
 		transparentShader.setMat4("projection", projection);
+
+		reflectShader.use();
+		reflectShader.setMat4("view", view);
+		reflectShader.setMat4("projection", projection);
+
+		modelShader.use();
+		modelShader.setMat4("view", view);
+		modelShader.setMat4("projection", projection);
+
 
 		shader.use();
 		shader.setMat4("view", view);
@@ -610,7 +692,29 @@ int main() {
 		model = glm::scale(model, glm::vec3(0.2f)); // Make it a smaller cube
 		lightCubeShader.setMat4("model", model);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
+		
+		//反射光物体：
+		reflectShader.use();
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-2.0, 0.0, 2.0));
+		reflectShader.setMat4("model", model);
+		reflectShader.setVec3("cameraPos", camera.Position);
+		glBindVertexArray(reflectVAO);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glBindVertexArray(0);
 
+		//反射光模型
+		modelShader.use();
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-3.0, -0.5, 2.0));
+		model = glm::scale(model, glm::vec3(0.15f));
+		modelShader.setMat4("model", model);
+		modelShader.setVec3("viewPos", camera.Position);
+		ourModel.Draw(modelShader);
+
+		
 		//优化：最后画天空盒
 		//（注意要在半透明物体前画，不然透明部分如果还没有其他颜色的话会变成背景色(写入深度数据)，
 		//致使天空盒通不过深度测试，导致窗户看不到天空盒）
@@ -679,10 +783,12 @@ int main() {
 	glDeleteVertexArrays(1, &planeVAO);
 	glDeleteVertexArrays(1, &transparentVAO);
 	glDeleteVertexArrays(1, &quadVAO);
+	glDeleteVertexArrays(1, &skyboxVAO);
 	glDeleteBuffers(1, &cubeVBO);
 	glDeleteBuffers(1, &planeVBO);
 	glDeleteBuffers(1, &transparentVBO);
 	glDeleteBuffers(1, &quadVBO);
+	glDeleteBuffers(1, &skyboxVBO);
 	glDeleteRenderbuffers(1, &rbo);
 	glDeleteFramebuffers(1, &framebuffer);
 

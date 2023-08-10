@@ -48,6 +48,8 @@ in vec2 TexCoords;
 out vec4 FragColor;
 
 uniform vec3 viewPos;
+//反射模型使用
+uniform samplerCube skybox;
 
 //注意使用的命名规范
 uniform sampler2D texture_diffuse1;		//漫反射材质
@@ -55,22 +57,27 @@ uniform sampler2D texture_specular1;	//镜面反射材质
 
 void main()
 {   
-	vec3 norm = normalize(Normal);	//法线单位化
-	vec3 viewDir = normalize(viewPos - FragPos);	//计算观察的方向
-	
-	//第一阶段：定向光照
-	vec3 result = CalcDirLight(dirlight, norm, viewDir);
+//	vec3 norm = normalize(Normal);	//法线单位化
+//	vec3 viewDir = normalize(viewPos - FragPos);	//计算观察的方向
+//	
+//	//第一阶段：定向光照
+//	vec3 result = CalcDirLight(dirlight, norm, viewDir);
+//
+//	//第二阶段：点光源
+//	for(int i = 0; i < NR_POINT_LIGHTS; ++i){
+//		result += CalcPointLight(pointLights[i], norm, FragPos, viewDir);
+//	}
+//	result += CalcPointLight(moveableLight, norm, FragPos, viewDir);		//可移动点光源
+//
+//	//第三阶段：聚光
+//	result += CalcSpotLight(spotLight, norm, FragPos, viewDir);
+//
+//	FragColor = vec4(result, 1.0);
 
-	//第二阶段：点光源
-	for(int i = 0; i < NR_POINT_LIGHTS; ++i){
-		result += CalcPointLight(pointLights[i], norm, FragPos, viewDir);
-	}
-	result += CalcPointLight(moveableLight, norm, FragPos, viewDir);		//可移动点光源
-
-	//第三阶段：聚光
-	result += CalcSpotLight(spotLight, norm, FragPos, viewDir);
-
-	FragColor = vec4(result, 1.0);
+	//全反射模型：
+	vec3 I = normalize(FragPos - viewPos);
+    vec3 R = reflect(I, normalize(Normal));
+    FragColor = vec4(texture(skybox, R).rgb, 1.0);
 }
 
 //定向光

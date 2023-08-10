@@ -82,5 +82,11 @@
     <None Include="..\..\Shader\skybox_vs.glsl">
       <Filter>资源文件</Filter>
     </None>
+    <None Include="..\..\Shader\reflectbox_fs.glsl">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\..\Shader\reflectbox_vs.glsl">
+      <Filter>资源文件</Filter>
+    </None>
   </ItemGroup>
 </Project>
