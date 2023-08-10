@@ -272,7 +272,7 @@ int main() {
 
 	glm::vec3 pointLightPositions[] = {
 		glm::vec3(0.7f,  0.2f,  2.0f),
-		glm::vec3(2.3f,  0.1f, -4.0f),
+		glm::vec3(-2.3f, 0.1f, -1.0f),
 		glm::vec3(0.0f,  2.0f, -2.0f),
 		glm::vec3(0.0f,  0.0f, -3.0f)
 	};
@@ -456,20 +456,19 @@ int main() {
 		glm::mat4 view = camera.GetViewMatrix();
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 
-		//第一步：先画天空盒，并且不允许深度写入，从而永远绘制在其他物体后
-		glDepthMask(GL_FALSE);		//禁用深度写入（先画，后面有其他物体的话就被覆盖）
-		skyboxShader.use();
-		//设置观察和投影矩阵
-		skyboxShader.setMat4("projection", projection);
-		//skyboxShader.setMat4("view", view);		//这样的话天空盒就和一般的盒子没区别，会动
-		//更改如下：相当于去掉了view矩阵中的位移部分，而保留了旋转和变换
-		skyboxShader.setMat4("view", glm::mat4(glm::mat3(view)));	
-		glBindVertexArray(skyboxVAO);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-		glDepthMask(GL_TRUE);		//开启深度写入
-
-
+		////第一步：先画天空盒，并且不允许深度写入，从而永远绘制在其他物体后
+		//glDepthMask(GL_FALSE);		//禁用深度写入（先画，后面有其他物体的话就被覆盖）
+		//skyboxShader.use();
+		////设置观察和投影矩阵
+		//skyboxShader.setMat4("projection", projection);
+		////skyboxShader.setMat4("view", view);		//这样的话天空盒就和一般的盒子没区别，会动
+		////更改如下：相当于去掉了view矩阵中的位移部分，而保留了旋转和变换
+		//skyboxShader.setMat4("view", glm::mat4(glm::mat3(view)));	
+		//glBindVertexArray(skyboxVAO);
+		//glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+		//glDrawArrays(GL_TRIANGLES, 0, 36);
+		//glDepthMask(GL_TRUE);		//开启深度写入
+		
 		// set uniforms
 		shaderSingleColor.use();
 		shaderSingleColor.setMat4("view", view);
@@ -587,9 +586,8 @@ int main() {
 		
 		//恢复到默认状态
 		glStencilMask(0xFF);		//恢复成可写，这样的话渲染循环中的glClear才能清除模板缓存
-		glStencilFunc(GL_ALWAYS, 0, 0xFF);
+		glStencilFunc(GL_ALWAYS, 0, 0xFF);		//默认写0，只有在需要模板写入时才写1
 		glEnable(GL_DEPTH_TEST);
-		
 
 		//画点光源物体
 		// also draw the lamp object(s)
@@ -613,6 +611,24 @@ int main() {
 		lightCubeShader.setMat4("model", model);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
+		//优化：最后画天空盒
+		//（注意要在半透明物体前画，不然透明部分如果还没有其他颜色的话会变成背景色(写入深度数据)，
+		//致使天空盒通不过深度测试，导致窗户看不到天空盒）
+
+		glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
+		//使用LEQUAL的原因：深度测试的默认初始值为1，在经过优化后，天空盒的深度一直为1，如果是LESS，可能通不过测试，无法画出来
+		skyboxShader.use();
+		view = glm::mat4(glm::mat3(camera.GetViewMatrix())); // remove translation from the view matrix
+		skyboxShader.setMat4("view", view);
+		skyboxShader.setMat4("projection", projection);
+		// skybox cube
+		glBindVertexArray(skyboxVAO);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glBindVertexArray(0);
+		glDepthFunc(GL_LESS); // set depth function back to default
+
 		//画窗户
 		//记录距离位置
 		std::map<float, glm::vec3> sorted;
@@ -630,7 +646,6 @@ int main() {
 			transparentShader.setMat4("model", model);
 			glDrawArrays(GL_TRIANGLES, 0, 6);
 		}
-
 
 		//现在回到default framebuffer中，画一个四边形，并将纹理贴上去
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
