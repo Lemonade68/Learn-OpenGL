@@ -145,6 +145,9 @@ int main() {
 	//反射盒shader
 	Shader reflectShader("../../Shader/reflectbox_vs.glsl", "../../Shader/reflectbox_fs.glsl");
 
+	//折射盒shader
+	Shader refractShader("../../Shader/refractbox_vs.glsl", "../../Shader/refractbox_fs.glsl");
+
 	//物体模型
 	Model ourModel("../../Models/nanosuit/nanosuit.obj");
 	Shader modelShader("../../Shader/nano_vs.glsl", "../../Shader/nano_fs.glsl");
@@ -454,6 +457,9 @@ int main() {
 	reflectShader.use();
 	reflectShader.setInt("skybox", 0);
 
+	refractShader.use();
+	refractShader.setInt("skybox", 0);
+
 	modelShader.use();
 	modelShader.setInt("skybox", 0);
 
@@ -554,6 +560,10 @@ int main() {
 		reflectShader.use();
 		reflectShader.setMat4("view", view);
 		reflectShader.setMat4("projection", projection);
+
+		refractShader.use();
+		refractShader.setMat4("view", view);
+		refractShader.setMat4("projection", projection);
 
 		modelShader.use();
 		modelShader.setMat4("view", view);
@@ -705,7 +715,19 @@ int main() {
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		glBindVertexArray(0);
 
-		//反射光模型
+		//折射光物体：
+		refractShader.use();
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-4.0, 0.0, 2.0));
+		refractShader.setMat4("model", model);
+		refractShader.setVec3("cameraPos", camera.Position);
+		glBindVertexArray(reflectVAO);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glBindVertexArray(0);
+
+		//反射/折射模型（具体在nano_fs里面改）
 		modelShader.use();
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(-3.0, -0.5, 2.0));

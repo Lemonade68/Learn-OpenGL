@@ -74,9 +74,15 @@ void main()
 //
 //	FragColor = vec4(result, 1.0);
 
-	//全反射模型：
-	vec3 I = normalize(FragPos - viewPos);
-    vec3 R = reflect(I, normalize(Normal));
+//	//反射模型：
+//	vec3 I = normalize(FragPos - viewPos);
+//    vec3 R = reflect(I, normalize(Normal));
+//    FragColor = vec4(texture(skybox, R).rgb, 1.0);
+
+	//折射模型
+    float ratio = 1.00 / 1.52;
+    vec3 I = normalize(FragPos - viewPos);
+    vec3 R = refract(I, normalize(Normal), ratio);
     FragColor = vec4(texture(skybox, R).rgb, 1.0);
 }
 
