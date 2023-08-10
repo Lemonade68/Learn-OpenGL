@@ -19,7 +19,9 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height);		//窗
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn);			//鼠标回调函数
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);		//滚轮回调函数
 void processInput(GLFWwindow *window);											//键盘监听函数
+
 unsigned int loadTexture(const char *path);										//添加材质的函数
+unsigned int loadCubemap(std::vector<std::string> faces);						//加载天空盒的函数
 
 //settings
 const unsigned int SCR_WIDTH = 800;
@@ -133,6 +135,9 @@ int main() {
 	//最简单的shader，因为只需要画出一个四边形之后，把帧缓冲的颜色缓冲附件(texture)贴上去就行
 	Shader screenShader("../../Shader/framebuffer_screen_vs.glsl", "../../Shader/framebuffer_screen_fs.glsl");
 
+	//天空盒shader
+	Shader skyboxShader("../../Shader/skybox_vs.glsl", "../../Shader/skybox_fs.glsl");
+
 	float cubeVertices[] = {
 		// positions          // normals           // texture coords
 		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
@@ -178,53 +183,6 @@ int main() {
 		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f
 	};
 
-	//这里纹理有问题，重点关注面剔除效果就好
-	//float cubeVertices[] = {
-	//	// Back face
-	//	// positions          // normals		// texture coords
-	//	-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
-	//	 0.5f, 0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  0.0f,
-	//	 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
-	//	 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
-	//	-0.5f,  -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  1.0f,
-	//	-0.5f, 0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
-	//	// Front face
-	//	-0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
-	//	 0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  0.0f,
-	//	 0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
-	//	 0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
-	//	-0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  1.0f,
-	//	-0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
-	//	// Left face
-	//	-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
-	//	-0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
-	//	-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
-	//	-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
-	//	-0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
-	//	-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
-	//	// Right face
-	//	 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
-	//	 0.5f,  -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
-	//	 0.5f, 0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
-	//	 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
-	//	 0.5f, 0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
-	//	 0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
-	//	// Bottom face     
-	//	-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
-	//	 0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  1.0f,
-	//	 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
-	//	 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
-	//	-0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  0.0f,
-	//	-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
-	//	// Top face
-	//	-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,
-	//	 0.5f,  0.5f, 0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  1.0f,
-	//	 0.5f,  0.5f,  -0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
-	//	 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
-	//	-0.5f,  0.5f,  -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  0.0f,
-	//	-0.5f,  0.5f, 0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f
-	//};
-
 	float planeVertices[] = {
 		// positions		  //Normals			// texture Coords (note we set these higher than 1 (together with GL_REPEAT as texture wrapping mode). this will cause the floor texture to repeat)
 		 5.0f, -0.5f,  5.0f,  0.0f, 1.0f, 0.0f, 2.0f, 0.0f,
@@ -256,6 +214,52 @@ int main() {
 	   -1.0f,  1.0f,  0.0f, 1.0f,
 		1.0f, -1.0f,  1.0f, 0.0f,
 		1.0f,  1.0f,  1.0f, 1.0f
+	};
+
+	//天空盒顶点位置
+	float skyboxVertices[] = {
+		// positions          
+		-1.0f,  1.0f, -1.0f,
+		-1.0f, -1.0f, -1.0f,
+		 1.0f, -1.0f, -1.0f,
+		 1.0f, -1.0f, -1.0f,
+		 1.0f,  1.0f, -1.0f,
+		-1.0f,  1.0f, -1.0f,
+
+		-1.0f, -1.0f,  1.0f,
+		-1.0f, -1.0f, -1.0f,
+		-1.0f,  1.0f, -1.0f,
+		-1.0f,  1.0f, -1.0f,
+		-1.0f,  1.0f,  1.0f,
+		-1.0f, -1.0f,  1.0f,
+
+		 1.0f, -1.0f, -1.0f,
+		 1.0f, -1.0f,  1.0f,
+		 1.0f,  1.0f,  1.0f,
+		 1.0f,  1.0f,  1.0f,
+		 1.0f,  1.0f, -1.0f,
+		 1.0f, -1.0f, -1.0f,
+
+		-1.0f, -1.0f,  1.0f,
+		-1.0f,  1.0f,  1.0f,
+		 1.0f,  1.0f,  1.0f,
+		 1.0f,  1.0f,  1.0f,
+		 1.0f, -1.0f,  1.0f,
+		-1.0f, -1.0f,  1.0f,
+
+		-1.0f,  1.0f, -1.0f,
+		 1.0f,  1.0f, -1.0f,
+		 1.0f,  1.0f,  1.0f,
+		 1.0f,  1.0f,  1.0f,
+		-1.0f,  1.0f,  1.0f,
+		-1.0f,  1.0f, -1.0f,
+
+		-1.0f, -1.0f, -1.0f,
+		-1.0f, -1.0f,  1.0f,
+		 1.0f, -1.0f, -1.0f,
+		 1.0f, -1.0f, -1.0f,
+		-1.0f, -1.0f,  1.0f,
+		 1.0f, -1.0f,  1.0f
 	};
 
 	//透明纹理的位置
@@ -337,13 +341,34 @@ int main() {
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
 
+	//skybox VAO
+	unsigned int skyboxVAO, skyboxVBO;
+	glGenVertexArrays(1, &skyboxVAO);
+	glGenBuffers(1, &skyboxVBO);
+	glBindVertexArray(skyboxVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+
 
 	// load textures (we now use a utility function to keep the code more organized)
-   // -----------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------
 	unsigned int cubeTexture = loadTexture("../../Textures/marble.jpg");
 	unsigned int floorTexture = loadTexture("../../Textures/metal.png");
 	//unsigned int transparentTexture = loadTexture("../../Textures/grass.png");
 	unsigned int transparentTexture = loadTexture("../../Textures/window.png");
+
+	//加载天空盒：
+	vector<std::string> faces{
+		"../../Textures/skybox/right.jpg",
+		"../../Textures/skybox/left.jpg",
+		"../../Textures/skybox/top.jpg",
+		"../../Textures/skybox/bottom.jpg",
+		"../../Textures/skybox/front.jpg",
+		"../../Textures/skybox/back.jpg"
+	};
+	unsigned int cubemapTexture = loadCubemap(faces);
 
 	// shader configuration
 	// --------------------
@@ -355,6 +380,9 @@ int main() {
 
 	screenShader.use();
 	screenShader.setInt("screenTexture", 0);
+
+	skyboxShader.use();
+	skyboxShader.setInt("skybox", 0);
 
 	//framebuffer configuration
 	unsigned int framebuffer;
@@ -427,6 +455,20 @@ int main() {
 		glm::mat4 model = glm::mat4(1.0f);
 		glm::mat4 view = camera.GetViewMatrix();
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+
+		//第一步：先画天空盒，并且不允许深度写入，从而永远绘制在其他物体后
+		glDepthMask(GL_FALSE);		//禁用深度写入（先画，后面有其他物体的话就被覆盖）
+		skyboxShader.use();
+		//设置观察和投影矩阵
+		skyboxShader.setMat4("projection", projection);
+		//skyboxShader.setMat4("view", view);		//这样的话天空盒就和一般的盒子没区别，会动
+		//更改如下：相当于去掉了view矩阵中的位移部分，而保留了旋转和变换
+		skyboxShader.setMat4("view", glm::mat4(glm::mat3(view)));	
+		glBindVertexArray(skyboxVAO);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glDepthMask(GL_TRUE);		//开启深度写入
+
 
 		// set uniforms
 		shaderSingleColor.use();
@@ -736,5 +778,35 @@ unsigned int loadTexture(char const * path)
 		std::cout << "Texture failed to load at path: " << path << std::endl;
 		stbi_image_free(data);
 	}
+	return textureID;
+}
+
+
+unsigned int loadCubemap(std::vector<std::string> faces) {
+	unsigned int textureID;
+	glGenTextures(1, &textureID);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+	int width, height, nrChannels;
+	for (unsigned int i = 0; i < faces.size(); ++i) {
+		unsigned char *data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
+		if (data) {
+			//按照openGL默认的顺序来进行立方体贴图的设置
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+				0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+			stbi_image_free(data);
+		}
+		else {
+			std::cout << "Cubemap texture failed to load at path: " << faces[i] << std::endl;
+			stbi_image_free(data);
+		}
+	}
+	//设置纹理环绕方式
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	
 	return textureID;
 }

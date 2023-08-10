@@ -76,5 +76,11 @@
     <None Include="..\..\Shader\framebuffer_screen_vs.glsl">
       <Filter>资源文件</Filter>
     </None>
+    <None Include="..\..\Shader\skybox_fs.glsl">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\..\Shader\skybox_vs.glsl">
+      <Filter>资源文件</Filter>
+    </None>
   </ItemGroup>
 </Project>
