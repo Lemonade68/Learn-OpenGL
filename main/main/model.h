@@ -146,6 +146,10 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene) {
 		//加载镜面光贴图
 		vector<Texture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
 		textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
+
+		//加载反射贴图（反射天空盒）,欺骗assimp —— 设置成漫反射贴图的种类
+		vector<Texture> reflectMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, "texture_diffuse");
+		textures.insert(textures.end(), reflectMaps.begin(), reflectMaps.end());
 	}
 
 	//生成新的Mesh类对象并返回

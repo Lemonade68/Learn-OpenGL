@@ -73,6 +73,9 @@ void main() {
 		result += CalcPointLight(pointLights[i], norm, FragPos, viewDir);
 	}
 
+	//第三阶段：聚光/手电筒
+	result += CalcSpotLight(spotLight, norm, FragPos, viewDir);
+
 	FragColor = vec4(result, 1.0);
 }
 

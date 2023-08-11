@@ -149,7 +149,8 @@ int main() {
 	Shader refractShader("../../Shader/refractbox_vs.glsl", "../../Shader/refractbox_fs.glsl");
 
 	//物体模型
-	Model ourModel("../../Models/nanosuit/nanosuit.obj");
+	//Model ourModel("../../Models/nanosuit/nanosuit.obj");
+	Model ourModel("../../Models/nanosuit_reflection/nanosuit.obj");
 	Shader modelShader("../../Shader/nano_vs.glsl", "../../Shader/nano_fs.glsl");
 
 	float cubeVertices[] = {
@@ -333,7 +334,7 @@ int main() {
 		glm::vec3(0.7f,  0.2f,  2.0f),
 		glm::vec3(-2.3f, 0.1f, -1.0f),
 		glm::vec3(0.0f,  2.0f, -2.0f),
-		glm::vec3(0.0f,  0.0f, -3.0f)
+		glm::vec3(-3.0f,  1.0f,  3.0f)
 	};
 
 	// cube VAO
@@ -461,7 +462,7 @@ int main() {
 	refractShader.setInt("skybox", 0);
 
 	modelShader.use();
-	modelShader.setInt("skybox", 0);
+	modelShader.setInt("skybox", 3);		//默认的纹理单元已经使用了3个（diffuse1, diffuse2, specular1），因此天空盒要设置成第四个modelShader
 
 	//framebuffer configuration
 	unsigned int framebuffer;
@@ -568,7 +569,66 @@ int main() {
 		modelShader.use();
 		modelShader.setMat4("view", view);
 		modelShader.setMat4("projection", projection);
+		modelShader.setVec3("viewPos", camera.Position);
 
+		modelShader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
+		modelShader.setVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
+		modelShader.setVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
+		modelShader.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
+
+		// movable light
+		modelShader.setVec3("moveableLight.position", lightPos);
+		modelShader.setVec3("moveableLight.ambient", 0.05f, 0.05f, 0.05f);
+		modelShader.setVec3("moveableLight.diffuse", 0.8f, 0.8f, 0.8f);
+		modelShader.setVec3("moveableLight.specular", 1.0f, 1.0f, 1.0f);
+		modelShader.setFloat("moveableLight.constant", 1.0f);
+		modelShader.setFloat("moveableLight.linear", 0.09f);
+		modelShader.setFloat("moveableLight.quadratic", 0.032f);
+
+		// point light 1
+		modelShader.setVec3("pointLights[0].position", pointLightPositions[0]);
+		modelShader.setVec3("pointLights[0].ambient", 0.05f, 0.05f, 0.05f);
+		modelShader.setVec3("pointLights[0].diffuse", 0.8f, 0.8f, 0.8f);
+		modelShader.setVec3("pointLights[0].specular", 1.0f, 1.0f, 1.0f);
+		modelShader.setFloat("pointLights[0].constant", 1.0f);
+		modelShader.setFloat("pointLights[0].linear", 0.09f);
+		modelShader.setFloat("pointLights[0].quadratic", 0.032f);
+		// point light 2
+		modelShader.setVec3("pointLights[1].position", pointLightPositions[1]);
+		modelShader.setVec3("pointLights[1].ambient", 0.05f, 0.05f, 0.05f);
+		modelShader.setVec3("pointLights[1].diffuse", 0.8f, 0.8f, 0.8f);
+		modelShader.setVec3("pointLights[1].specular", 1.0f, 1.0f, 1.0f);
+		modelShader.setFloat("pointLights[1].constant", 1.0f);
+		modelShader.setFloat("pointLights[1].linear", 0.09f);
+		modelShader.setFloat("pointLights[1].quadratic", 0.032f);
+		// point light 3
+		modelShader.setVec3("pointLights[2].position", pointLightPositions[2]);
+		modelShader.setVec3("pointLights[2].ambient", 0.05f, 0.05f, 0.05f);
+		modelShader.setVec3("pointLights[2].diffuse", 0.8f, 0.8f, 0.8f);
+		modelShader.setVec3("pointLights[2].specular", 1.0f, 1.0f, 1.0f);
+		modelShader.setFloat("pointLights[2].constant", 1.0f);
+		modelShader.setFloat("pointLights[2].linear", 0.09f);
+		modelShader.setFloat("pointLights[2].quadratic", 0.032f);
+		// point light 4
+		modelShader.setVec3("pointLights[3].position", pointLightPositions[3]);
+		modelShader.setVec3("pointLights[3].ambient", 0.05f, 0.05f, 0.05f);
+		modelShader.setVec3("pointLights[3].diffuse", 0.8f, 0.8f, 0.8f);
+		modelShader.setVec3("pointLights[3].specular", 1.0f, 1.0f, 1.0f);
+		modelShader.setFloat("pointLights[3].constant", 1.0f);
+		modelShader.setFloat("pointLights[3].linear", 0.09f);
+		modelShader.setFloat("pointLights[3].quadratic", 0.032f);
+
+		//spot light
+		modelShader.setVec3("spotLight.position", camera.Position);
+		modelShader.setVec3("spotLight.direction", camera.Front);
+		modelShader.setVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
+		modelShader.setVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
+		modelShader.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
+		modelShader.setFloat("spotLight.constant", 1.0f);
+		modelShader.setFloat("spotLight.linear", 0.09f);
+		modelShader.setFloat("spotLight.quadratic", 0.032f);
+		modelShader.setFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
+		modelShader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
 
 		shader.use();
 		shader.setMat4("view", view);
@@ -623,6 +683,17 @@ int main() {
 		shader.setFloat("pointLights[3].constant", 1.0f);
 		shader.setFloat("pointLights[3].linear", 0.09f);
 		shader.setFloat("pointLights[3].quadratic", 0.032f);
+
+		shader.setVec3("spotLight.position", camera.Position);
+		shader.setVec3("spotLight.direction", camera.Front);
+		shader.setVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
+		shader.setVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
+		shader.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
+		shader.setFloat("spotLight.constant", 1.0f);
+		shader.setFloat("spotLight.linear", 0.09f);
+		shader.setFloat("spotLight.quadratic", 0.032f);
+		shader.setFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
+		shader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
 
 		//先画所有不透明的物体
 		//1.开始时绘制地板 —— 不需要边框，因此设置不经过模板缓冲
@@ -733,7 +804,8 @@ int main() {
 		model = glm::translate(model, glm::vec3(-3.0, -0.5, 2.0));
 		model = glm::scale(model, glm::vec3(0.15f));
 		modelShader.setMat4("model", model);
-		modelShader.setVec3("viewPos", camera.Position);
+		glActiveTexture(GL_TEXTURE3);				//不是默认的纹理单元0，需要额外绑定
+		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
 		ourModel.Draw(modelShader);
 
 		
@@ -856,7 +928,7 @@ void processInput(GLFWwindow *window) {
 		glfwSetWindowShouldClose(window, true);		//终止下一次while循环的条件
 
 	//移动部分(与camera类交互)
-	float cameraSpeed = 3.0f * deltaTime;		//镜头位置移动速度
+	float cameraSpeed = 2.5f * deltaTime;		//镜头位置移动速度
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 		camera.ProcessKeyboard(FORWARD, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
