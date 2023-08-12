@@ -162,6 +162,7 @@
     <None Include="..\..\Shader\light_fs.glsl" />
     <None Include="..\..\Shader\light_vs.glsl" />
     <None Include="..\..\Shader\nano_fs.glsl" />
+    <None Include="..\..\Shader\nano_gs.glsl" />
     <None Include="..\..\Shader\nano_vs.glsl" />
     <None Include="..\..\Shader\reflectbox_fs.glsl" />
     <None Include="..\..\Shader\reflectbox_vs.glsl" />

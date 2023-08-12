@@ -155,7 +155,7 @@ int main() {
 	//物体模型
 	//Model ourModel("../../Models/nanosuit/nanosuit.obj");
 	Model ourModel("../../Models/nanosuit_reflection/nanosuit.obj");
-	Shader modelShader("../../Shader/nano_vs.glsl", "../../Shader/nano_fs.glsl");
+	Shader modelShader("../../Shader/nano_vs.glsl", "../../Shader/nano_fs.glsl", "../../Shader/nano_gs.glsl");
 
 	float cubeVertices[] = {
 		// positions          // normals           // texture coords
@@ -574,6 +574,9 @@ int main() {
 		//modelShader.setMat4("view", view);
 		//modelShader.setMat4("projection", projection);
 		modelShader.setVec3("viewPos", camera.Position);
+		// add time component to geometry shader in the form of a uniform
+		modelShader.setFloat("time", static_cast<float>(glfwGetTime()));
+
 
 		//加载光源参数
 		loadShaderLightPara(modelShader, pointLightPositions);
@@ -725,7 +728,8 @@ int main() {
 		model = glm::translate(model, glm::vec3(-3.0, -0.5, 2.0));
 		model = glm::scale(model, glm::vec3(0.15f));
 		modelShader.setMat4("model", model);
-		glActiveTexture(GL_TEXTURE3);				//不是默认的纹理单元0，需要额外绑定
+		//不是默认的纹理单元0，需要额外绑定（纹理名称不是规定名称，需要额外设置）
+		glActiveTexture(GL_TEXTURE3);				
 		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
 		ourModel.Draw(modelShader);
 

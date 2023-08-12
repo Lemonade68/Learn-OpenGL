@@ -55,9 +55,6 @@
     <None Include="..\..\Shader\nano_fs.glsl">
       <Filter>资源文件</Filter>
     </None>
-    <None Include="..\..\Shader\nano_vs.glsl">
-      <Filter>资源文件</Filter>
-    </None>
     <None Include="..\..\Shader\stencil_fs.glsl">
       <Filter>资源文件</Filter>
     </None>
@@ -92,6 +89,12 @@
       <Filter>资源文件</Filter>
     </None>
     <None Include="..\..\Shader\refractbox_vs.glsl">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\..\Shader\nano_gs.glsl">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\..\Shader\nano_vs.glsl">
       <Filter>资源文件</Filter>
     </None>
   </ItemGroup>
