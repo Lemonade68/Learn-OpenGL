@@ -22,6 +22,7 @@ void processInput(GLFWwindow *window);											//键盘监听函数
 
 unsigned int loadTexture(const char *path);										//添加材质的函数
 unsigned int loadCubemap(std::vector<std::string> faces);						//加载天空盒的函数
+void loadShaderLightPara(Shader &shader, glm::vec3 pointLightPositions[]);
 
 //settings
 const unsigned int SCR_WIDTH = 800;
@@ -123,6 +124,9 @@ int main() {
 	
 	glDisable(GL_CULL_FACE);
 
+	//使用点元(GL_POINTS)进行绘制时，可以通过开启这个来实现点的大小的改变（对gl_PointSize内建变量的控制）
+	//见reflectbox的vs的改动
+	glEnable(GL_PROGRAM_POINT_SIZE);
 
 	//bulid shader program
 	//-----------------------------------------------------------
@@ -567,133 +571,50 @@ int main() {
 		refractShader.setMat4("projection", projection);
 
 		modelShader.use();
-		modelShader.setMat4("view", view);
-		modelShader.setMat4("projection", projection);
+		//modelShader.setMat4("view", view);
+		//modelShader.setMat4("projection", projection);
 		modelShader.setVec3("viewPos", camera.Position);
 
-		modelShader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
-		modelShader.setVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
-		modelShader.setVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
-		modelShader.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
+		//加载光源参数
+		loadShaderLightPara(modelShader, pointLightPositions);
+		loadShaderLightPara(shader, pointLightPositions);
 
-		// movable light
-		modelShader.setVec3("moveableLight.position", lightPos);
-		modelShader.setVec3("moveableLight.ambient", 0.05f, 0.05f, 0.05f);
-		modelShader.setVec3("moveableLight.diffuse", 0.8f, 0.8f, 0.8f);
-		modelShader.setVec3("moveableLight.specular", 1.0f, 1.0f, 1.0f);
-		modelShader.setFloat("moveableLight.constant", 1.0f);
-		modelShader.setFloat("moveableLight.linear", 0.09f);
-		modelShader.setFloat("moveableLight.quadratic", 0.032f);
+		//===============================================================================
 
-		// point light 1
-		modelShader.setVec3("pointLights[0].position", pointLightPositions[0]);
-		modelShader.setVec3("pointLights[0].ambient", 0.05f, 0.05f, 0.05f);
-		modelShader.setVec3("pointLights[0].diffuse", 0.8f, 0.8f, 0.8f);
-		modelShader.setVec3("pointLights[0].specular", 1.0f, 1.0f, 1.0f);
-		modelShader.setFloat("pointLights[0].constant", 1.0f);
-		modelShader.setFloat("pointLights[0].linear", 0.09f);
-		modelShader.setFloat("pointLights[0].quadratic", 0.032f);
-		// point light 2
-		modelShader.setVec3("pointLights[1].position", pointLightPositions[1]);
-		modelShader.setVec3("pointLights[1].ambient", 0.05f, 0.05f, 0.05f);
-		modelShader.setVec3("pointLights[1].diffuse", 0.8f, 0.8f, 0.8f);
-		modelShader.setVec3("pointLights[1].specular", 1.0f, 1.0f, 1.0f);
-		modelShader.setFloat("pointLights[1].constant", 1.0f);
-		modelShader.setFloat("pointLights[1].linear", 0.09f);
-		modelShader.setFloat("pointLights[1].quadratic", 0.032f);
-		// point light 3
-		modelShader.setVec3("pointLights[2].position", pointLightPositions[2]);
-		modelShader.setVec3("pointLights[2].ambient", 0.05f, 0.05f, 0.05f);
-		modelShader.setVec3("pointLights[2].diffuse", 0.8f, 0.8f, 0.8f);
-		modelShader.setVec3("pointLights[2].specular", 1.0f, 1.0f, 1.0f);
-		modelShader.setFloat("pointLights[2].constant", 1.0f);
-		modelShader.setFloat("pointLights[2].linear", 0.09f);
-		modelShader.setFloat("pointLights[2].quadratic", 0.032f);
-		// point light 4
-		modelShader.setVec3("pointLights[3].position", pointLightPositions[3]);
-		modelShader.setVec3("pointLights[3].ambient", 0.05f, 0.05f, 0.05f);
-		modelShader.setVec3("pointLights[3].diffuse", 0.8f, 0.8f, 0.8f);
-		modelShader.setVec3("pointLights[3].specular", 1.0f, 1.0f, 1.0f);
-		modelShader.setFloat("pointLights[3].constant", 1.0f);
-		modelShader.setFloat("pointLights[3].linear", 0.09f);
-		modelShader.setFloat("pointLights[3].quadratic", 0.032f);
+		//使用uniform buffer object来实现对shader&modelShader的view/projection矩阵的同时设置
+		unsigned int uniformBlockIndexShader = glGetUniformBlockIndex(shader.ID, "Matrices");
+		unsigned int uniformBlockIndexModelShader = glGetUniformBlockIndex(modelShader.ID, "Matrices");
 
-		//spot light
-		modelShader.setVec3("spotLight.position", camera.Position);
-		modelShader.setVec3("spotLight.direction", camera.Front);
-		modelShader.setVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
-		modelShader.setVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
-		modelShader.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
-		modelShader.setFloat("spotLight.constant", 1.0f);
-		modelShader.setFloat("spotLight.linear", 0.09f);
-		modelShader.setFloat("spotLight.quadratic", 0.032f);
-		modelShader.setFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
-		modelShader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
+		//将顶点着色器的uniform块设置为绑定点0
+		glUniformBlockBinding(shader.ID, uniformBlockIndexShader, 0);
+		glUniformBlockBinding(modelShader.ID, uniformBlockIndexModelShader, 0);
+
+		//创建uniform缓冲对象，并绑定到点0
+		unsigned int uboMatrices;
+		glGenBuffers(1, &uboMatrices);
+		
+		glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
+		//先不分配，之后使用subdata分配
+		glBufferData(GL_UNIFORM_BUFFER, 2 * sizeof(glm::mat4), NULL, GL_STATIC_DRAW);	
+		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+		//绑定到点0
+		glBindBufferRange(GL_UNIFORM_BUFFER, 0, uboMatrices, 0, 2 * sizeof(glm::mat4));
+
+		//填充缓冲（使用subdata）
+		glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
+		glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(projection));
+		glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(view));
+		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+		//===============================================================================
+
 
 		shader.use();
-		shader.setMat4("view", view);
-		shader.setMat4("projection", projection);
+		//shader.setMat4("view", view);
+		//shader.setMat4("projection", projection);
 		//一定记得要加 ！！！
 		shader.setVec3("viewPos", camera.Position);
-
-		// directional light
-		shader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
-		shader.setVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
-		shader.setVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
-		shader.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
-		
-		// movable light
-		shader.setVec3("moveableLight.position", lightPos);
-		shader.setVec3("moveableLight.ambient", 0.05f, 0.05f, 0.05f);
-		shader.setVec3("moveableLight.diffuse", 0.8f, 0.8f, 0.8f);
-		shader.setVec3("moveableLight.specular", 1.0f, 1.0f, 1.0f);
-		shader.setFloat("moveableLight.constant", 1.0f);
-		shader.setFloat("moveableLight.linear", 0.09f);
-		shader.setFloat("moveableLight.quadratic", 0.032f);
-
-		// point light 1
-		shader.setVec3("pointLights[0].position", pointLightPositions[0]);
-		shader.setVec3("pointLights[0].ambient", 0.05f, 0.05f, 0.05f);
-		shader.setVec3("pointLights[0].diffuse", 0.8f, 0.8f, 0.8f);
-		shader.setVec3("pointLights[0].specular", 1.0f, 1.0f, 1.0f);
-		shader.setFloat("pointLights[0].constant", 1.0f);
-		shader.setFloat("pointLights[0].linear", 0.09f);
-		shader.setFloat("pointLights[0].quadratic", 0.032f);
-		// point light 2
-		shader.setVec3("pointLights[1].position", pointLightPositions[1]);
-		shader.setVec3("pointLights[1].ambient", 0.05f, 0.05f, 0.05f);
-		shader.setVec3("pointLights[1].diffuse", 0.8f, 0.8f, 0.8f);
-		shader.setVec3("pointLights[1].specular", 1.0f, 1.0f, 1.0f);
-		shader.setFloat("pointLights[1].constant", 1.0f);
-		shader.setFloat("pointLights[1].linear", 0.09f);
-		shader.setFloat("pointLights[1].quadratic", 0.032f);
-		// point light 3
-		shader.setVec3("pointLights[2].position", pointLightPositions[2]);
-		shader.setVec3("pointLights[2].ambient", 0.05f, 0.05f, 0.05f);
-		shader.setVec3("pointLights[2].diffuse", 0.8f, 0.8f, 0.8f);
-		shader.setVec3("pointLights[2].specular", 1.0f, 1.0f, 1.0f);
-		shader.setFloat("pointLights[2].constant", 1.0f);
-		shader.setFloat("pointLights[2].linear", 0.09f);
-		shader.setFloat("pointLights[2].quadratic", 0.032f);
-		// point light 4
-		shader.setVec3("pointLights[3].position", pointLightPositions[3]);
-		shader.setVec3("pointLights[3].ambient", 0.05f, 0.05f, 0.05f);
-		shader.setVec3("pointLights[3].diffuse", 0.8f, 0.8f, 0.8f);
-		shader.setVec3("pointLights[3].specular", 1.0f, 1.0f, 1.0f);
-		shader.setFloat("pointLights[3].constant", 1.0f);
-		shader.setFloat("pointLights[3].linear", 0.09f);
-		shader.setFloat("pointLights[3].quadratic", 0.032f);
-
-		shader.setVec3("spotLight.position", camera.Position);
-		shader.setVec3("spotLight.direction", camera.Front);
-		shader.setVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
-		shader.setVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
-		shader.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
-		shader.setFloat("spotLight.constant", 1.0f);
-		shader.setFloat("spotLight.linear", 0.09f);
-		shader.setFloat("spotLight.quadratic", 0.032f);
-		shader.setFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
-		shader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
 
 		//先画所有不透明的物体
 		//1.开始时绘制地板 —— 不需要边框，因此设置不经过模板缓冲
@@ -1024,4 +945,68 @@ unsigned int loadCubemap(std::vector<std::string> faces) {
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 	
 	return textureID;
+}
+
+void loadShaderLightPara(Shader &shader, glm::vec3 pointLightPositions[]) {
+	shader.use();
+
+	//directional light
+	shader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
+	shader.setVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
+	shader.setVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
+	shader.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
+
+	// movable light
+	shader.setVec3("moveableLight.position", lightPos);
+	shader.setVec3("moveableLight.ambient", 0.05f, 0.05f, 0.05f);
+	shader.setVec3("moveableLight.diffuse", 0.8f, 0.8f, 0.8f);
+	shader.setVec3("moveableLight.specular", 1.0f, 1.0f, 1.0f);
+	shader.setFloat("moveableLight.constant", 1.0f);
+	shader.setFloat("moveableLight.linear", 0.09f);
+	shader.setFloat("moveableLight.quadratic", 0.032f);
+
+	// point light 1
+	shader.setVec3("pointLights[0].position", pointLightPositions[0]);
+	shader.setVec3("pointLights[0].ambient", 0.05f, 0.05f, 0.05f);
+	shader.setVec3("pointLights[0].diffuse", 0.8f, 0.8f, 0.8f);
+	shader.setVec3("pointLights[0].specular", 1.0f, 1.0f, 1.0f);
+	shader.setFloat("pointLights[0].constant", 1.0f);
+	shader.setFloat("pointLights[0].linear", 0.09f);
+	shader.setFloat("pointLights[0].quadratic", 0.032f);
+	// point light 2
+	shader.setVec3("pointLights[1].position", pointLightPositions[1]);
+	shader.setVec3("pointLights[1].ambient", 0.05f, 0.05f, 0.05f);
+	shader.setVec3("pointLights[1].diffuse", 0.8f, 0.8f, 0.8f);
+	shader.setVec3("pointLights[1].specular", 1.0f, 1.0f, 1.0f);
+	shader.setFloat("pointLights[1].constant", 1.0f);
+	shader.setFloat("pointLights[1].linear", 0.09f);
+	shader.setFloat("pointLights[1].quadratic", 0.032f);
+	// point light 3
+	shader.setVec3("pointLights[2].position", pointLightPositions[2]);
+	shader.setVec3("pointLights[2].ambient", 0.05f, 0.05f, 0.05f);
+	shader.setVec3("pointLights[2].diffuse", 0.8f, 0.8f, 0.8f);
+	shader.setVec3("pointLights[2].specular", 1.0f, 1.0f, 1.0f);
+	shader.setFloat("pointLights[2].constant", 1.0f);
+	shader.setFloat("pointLights[2].linear", 0.09f);
+	shader.setFloat("pointLights[2].quadratic", 0.032f);
+	// point light 4
+	shader.setVec3("pointLights[3].position", pointLightPositions[3]);
+	shader.setVec3("pointLights[3].ambient", 0.05f, 0.05f, 0.05f);
+	shader.setVec3("pointLights[3].diffuse", 0.8f, 0.8f, 0.8f);
+	shader.setVec3("pointLights[3].specular", 1.0f, 1.0f, 1.0f);
+	shader.setFloat("pointLights[3].constant", 1.0f);
+	shader.setFloat("pointLights[3].linear", 0.09f);
+	shader.setFloat("pointLights[3].quadratic", 0.032f);
+
+	//spot light
+	shader.setVec3("spotLight.position", camera.Position);
+	shader.setVec3("spotLight.direction", camera.Front);
+	shader.setVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
+	shader.setVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
+	shader.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
+	shader.setFloat("spotLight.constant", 1.0f);
+	shader.setFloat("spotLight.linear", 0.09f);
+	shader.setFloat("spotLight.quadratic", 0.032f);
+	shader.setFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
+	shader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
 }

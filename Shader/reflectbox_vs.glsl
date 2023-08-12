@@ -14,4 +14,5 @@ void main()
     Normal = mat3(transpose(inverse(model))) * aNormal;
     Position = vec3(model * vec4(aPos, 1.0));
     gl_Position = projection * view * model * vec4(aPos, 1.0);
+//	gl_PointSize = gl_Position.z;		//开启glEnable(GL_PROGRAM_POINT_SIZE)后   绘制GL_POINTS时可用
 }

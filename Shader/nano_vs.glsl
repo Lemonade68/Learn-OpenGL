@@ -8,8 +8,12 @@ out vec3 FragPos;
 out vec3 Normal;
 
 uniform mat4 model;
-uniform mat4 view;
-uniform mat4 projection;
+
+// π”√uniform buffer object
+layout (std140) uniform Matrices {
+    mat4 projection;
+    mat4 view;
+};
 
 void main()
 {
