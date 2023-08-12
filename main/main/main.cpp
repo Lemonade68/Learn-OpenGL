@@ -155,7 +155,9 @@ int main() {
 	//物体模型
 	//Model ourModel("../../Models/nanosuit/nanosuit.obj");
 	Model ourModel("../../Models/nanosuit_reflection/nanosuit.obj");
-	Shader modelShader("../../Shader/nano_vs.glsl", "../../Shader/nano_fs.glsl", "../../Shader/nano_gs.glsl");
+	Shader modelShader("../../Shader/nano_vs.glsl", "../../Shader/nano_fs.glsl");
+	//画法线的shader
+	Shader modelShaderNormal("../../Shader/nano_vs_normal.glsl", "../../Shader/nano_fs_normal.glsl", "../../Shader/nano_gs_normal.glsl");
 
 	float cubeVertices[] = {
 		// positions          // normals           // texture coords
@@ -575,8 +577,11 @@ int main() {
 		//modelShader.setMat4("projection", projection);
 		modelShader.setVec3("viewPos", camera.Position);
 		// add time component to geometry shader in the form of a uniform
-		modelShader.setFloat("time", static_cast<float>(glfwGetTime()));
+		//modelShader.setFloat("time", static_cast<float>(glfwGetTime()));
 
+		modelShaderNormal.use();
+		modelShaderNormal.setMat4("view", view);
+		modelShaderNormal.setMat4("projection", projection);
 
 		//加载光源参数
 		loadShaderLightPara(modelShader, pointLightPositions);
@@ -732,6 +737,14 @@ int main() {
 		glActiveTexture(GL_TEXTURE3);				
 		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
 		ourModel.Draw(modelShader);
+
+		//绘制法线
+		modelShaderNormal.use();
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-3.0, -0.5, 2.0));
+		model = glm::scale(model, glm::vec3(0.15f));
+		modelShaderNormal.setMat4("model", model);
+		ourModel.Draw(modelShaderNormal);
 
 		
 		//优化：最后画天空盒

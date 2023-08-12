@@ -91,10 +91,19 @@
     <None Include="..\..\Shader\refractbox_vs.glsl">
       <Filter>资源文件</Filter>
     </None>
-    <None Include="..\..\Shader\nano_gs.glsl">
+    <None Include="..\..\Shader\nano_vs.glsl">
       <Filter>资源文件</Filter>
     </None>
-    <None Include="..\..\Shader\nano_vs.glsl">
+    <None Include="..\..\Shader\nano_gs_normal.glsl">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\..\Shader\nano_gs_explode.glsl">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\..\Shader\nano_fs_normal.glsl">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\..\Shader\nano_vs_normal.glsl">
       <Filter>资源文件</Filter>
     </None>
   </ItemGroup>
