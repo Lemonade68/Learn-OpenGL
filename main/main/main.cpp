@@ -85,19 +85,20 @@ int main() {
 
 	//bulid shader program
 	//-----------------------------------------------------------
-	Shader shader("../../Shader/basic_vs.glsl", "../../Shader/basic_fs.glsl");
+	Shader planetShader("../../Shader/basic_vs.glsl", "../../Shader/basic_fs.glsl");
+	Shader rockShader("../../Shader/rock_vs.glsl", "../../Shader/rock_fs.glsl");
 
 	Model rock("../../Models/rock/rock.obj");
 	Model planet("../../Models/planet/planet.obj");
 
 	// generate a large list of semi-random model transformation matrices
 	// ------------------------------------------------------------------
-	unsigned int amount = 1000;
+	unsigned int amount = 10000;
 	glm::mat4* modelMatrices;
 	modelMatrices = new glm::mat4[amount];
 	srand(static_cast<unsigned int>(glfwGetTime())); // initialize random seed
 	float radius = 50.0;
-	float offset = 2.5f;
+	float offset = 12.5f;
 	for (unsigned int i = 0; i < amount; i++) {
 		glm::mat4 model = glm::mat4(1.0f);
 		// 1. translation: displace along circle with 'radius' in range [-offset, offset]
@@ -121,6 +122,36 @@ int main() {
 		// 4. now add to list of matrices
 		modelMatrices[i] = model;
 	}
+
+	//使用实例化数组的方式：
+	unsigned int buffer;
+	glGenBuffers(1, &buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, buffer);
+	glBufferData(GL_ARRAY_BUFFER, amount * sizeof(glm::mat4), &modelMatrices[0], GL_STATIC_DRAW);
+	
+	for (unsigned int i = 0; i < rock.meshes.size(); ++i) {
+		unsigned int VAO = rock.meshes[i].VAO;
+		glBindVertexArray(VAO);
+		//顶点属性(相当于在默认的属性后面接着写)
+		GLsizei vec4Size = sizeof(glm::vec4);
+		glEnableVertexAttribArray(3);
+		glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)0);
+		glEnableVertexAttribArray(4);
+		glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(vec4Size));
+		glEnableVertexAttribArray(5);
+		glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(2 * vec4Size));
+		glEnableVertexAttribArray(6);
+		glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(3 * vec4Size));
+
+		//设置实例化
+		glVertexAttribDivisor(3, 1);
+		glVertexAttribDivisor(4, 1);
+		glVertexAttribDivisor(5, 1);
+		glVertexAttribDivisor(6, 1);
+
+		glBindVertexArray(0);
+	}
+	
 
 	//是否使用线框模式
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -147,22 +178,31 @@ int main() {
 		// configure transformation matrices
 		glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 1000.0f);
 		glm::mat4 view = camera.GetViewMatrix();;
-		shader.use();
-		shader.setMat4("projection", projection);
-		shader.setMat4("view", view);
+		rockShader.use();
+		rockShader.setMat4("projection", projection);
+		rockShader.setMat4("view", view);
+
+		planetShader.use();
+		planetShader.setMat4("projection", projection);
+		planetShader.setMat4("view", view);
 
 		// draw planet
 		glm::mat4 model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(0.0f, -3.0f, 0.0f));
 		model = glm::scale(model, glm::vec3(4.0f, 4.0f, 4.0f));
-		shader.setMat4("model", model);
-		planet.Draw(shader);
+		planetShader.setMat4("model", model);
+		planet.Draw(planetShader);
 
-		// draw meteorites
-		for (unsigned int i = 0; i < amount; i++)
-		{
-			shader.setMat4("model", modelMatrices[i]);
-			rock.Draw(shader);
+		rockShader.use();
+		rockShader.setInt("texture_diffuse1", 0);		//要用手动instanced来画，需要手动设置纹理
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, rock.textures_loaded[0].id);
+		
+		for (unsigned int i = 0; i < rock.meshes.size(); i++) {		//这里不是遍历陨石个数次，而是rock对象中网格次数
+			glBindVertexArray(rock.meshes[i].VAO);
+			//这里最后的amount才表示要画amount个陨石
+			glDrawElementsInstanced(GL_TRIANGLES, static_cast<unsigned int>(rock.meshes[i].indices.size()), GL_UNSIGNED_INT, 0, amount);
+			glBindVertexArray(0);
 		}
 
 		//检查并调用事件，交换缓冲
@@ -213,7 +253,7 @@ void processInput(GLFWwindow *window) {
 		glfwSetWindowShouldClose(window, true);		//终止下一次while循环的条件
 
 	//移动部分(与camera类交互)
-	float cameraSpeed = 2.5f * deltaTime;		//镜头位置移动速度
+	float cameraSpeed = 100.0f * deltaTime;		//镜头位置移动速度
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 		camera.ProcessKeyboard(FORWARD, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)

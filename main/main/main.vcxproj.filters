@@ -109,5 +109,11 @@
     <None Include="..\..\Shader\nano_vs_normal.glsl">
       <Filter>资源文件</Filter>
     </None>
+    <None Include="..\..\Shader\rock_fs.glsl">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\..\Shader\rock_vs.glsl">
+      <Filter>资源文件</Filter>
+    </None>
   </ItemGroup>
 </Project>
