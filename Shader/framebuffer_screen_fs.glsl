@@ -4,8 +4,10 @@ out vec4 FragColor;
 in vec2 TexCoords;
 
 uniform sampler2D screenTexture;
+uniform bool coreMode;
 
 const float offset = 1.0 / 300.0;  
+float gamma = 2.2;					//½øÐÐgamma½ÃÕý£¨Ö»ÐèÒªÔÚºó´¦ÀíËÄ±ßÐÎÉÏÔËÓÃÒ»´Î¼´¿É£©
 
 vec2 offsets[9] = vec2[](	//Æ«ÒÆÁ¿Êý×é
     vec2(-offset,  offset), // ×óÉÏ
@@ -37,39 +39,54 @@ float kernel_Border[9] = float[](	//ºË3 ¡ª¡ª ±ßÔµ¼ì²âºË(¼ÓÆðÀ´Îª0£¬ÏàÍ¬µÄ»áÏûµô£
     -1, -1, -1
 );
 
+//½øÐÐgammaCorrection
+vec4 gammaCorrection(vec4 FragColor){
+	vec4 temp = vec4(pow(vec3(FragColor), vec3(1.0/gamma)), 1.0);
+	return temp;
+}
+
+
 void main()
 {
-	//1.Ô­Ð§¹û
-    vec3 col = texture(screenTexture, TexCoords).rgb;
-    FragColor = vec4(col, 1.0);
+	if(coreMode == false){
+		//1.Ô­Ð§¹û
+		vec3 col = texture(screenTexture, TexCoords).rgb;
+		FragColor = vec4(col, 1.0);
+		FragColor = gammaCorrection(FragColor);
+		//¹ýÁÁµÄÔ­Òò£ºÊµ¼ÊÉÏ½øÐÐÁËÁ½´Îgamma½ÃÕý
+	}
+	else{
+		//	//2.·´É«Ð§¹û£º
+	//	FragColor = vec4(vec3(1.0 - texture(screenTexture,TexCoords)), 1.0);
+	//	FragColor = gammaCorrection(FragColor);
 
-//	//2.·´É«Ð§¹û£º
-//	FragColor = vec4(vec3(1.0 - texture(screenTexture,TexCoords)), 1.0);
+	//	//3.»Ò¶È»¯£º¾ù·Ö »ò ¼ÓÈ¨
+	//	//¾ù·Ö-------
+	//	FragColor = texture(screenTexture, TexCoords);
+	//    float average = (FragColor.r + FragColor.g + FragColor.b) / 3.0;
+	//    FragColor = vec4(average, average, average, 1.0);
+	//	FragColor = gammaCorrection(FragColor);
+	//	//¼ÓÈ¨-------
+	//	FragColor = texture(screenTexture, TexCoords);
+	//    float average = 0.2126 * FragColor.r + 0.7152 * FragColor.g + 0.0722 * FragColor.b;
+	//    FragColor = vec4(average, average, average, 1.0);
+	//	FragColor = gammaCorrection(FragColor);
 
-//	//3.»Ò¶È»¯£º¾ù·Ö »ò ¼ÓÈ¨
-//	//¾ù·Ö-------
-//	FragColor = texture(screenTexture, TexCoords);
-//    float average = (FragColor.r + FragColor.g + FragColor.b) / 3.0;
-//    FragColor = vec4(average, average, average, 1.0);
-//	//¼ÓÈ¨-------
-//	FragColor = texture(screenTexture, TexCoords);
-//    float average = 0.2126 * FragColor.r + 0.7152 * FragColor.g + 0.0722 * FragColor.b;
-//    FragColor = vec4(average, average, average, 1.0);
-
-//	//4.ºËÐ§¹û
-//	vec3 sampleTex[9];
-//    for(int i = 0; i < 9; i++) {
-//        sampleTex[i] = vec3(texture(screenTexture, TexCoords.st + offsets[i]));
-//    }
-//    vec3 col = vec3(0.0);
-//    for(int i = 0; i < 9; i++) {
-//        col += sampleTex[i] * kernel_Sharpen[i];		//Èñ»¯Ð§¹û
-////        col += sampleTex[i] * kernel_Border[i];		//±ßÔµ¼ì²âÐ§¹û
-////		col += sampleTex[i] * kernel_Blurring[i];		//Ä£ºýÐ§¹û 
-//	}
-//    FragColor = vec4(col, 1.0);
-	
-	//²¹³ä£ºÊ¹ÓÃºËÐ§¹ûÊ±±ßÔµÏñËØµÄ²ÉÑù¿ÉÄÜ»á²Éµ½window½çÃæÍâÃæµÄÏñËØ£¬µ¼ÖÂ²úÉúÆæ¹ÖµÄ±ßÔµÐ§¹û
-	//½â¾ö£º½«ÆÁÄ»ÎÆÀíµÄ»·ÈÆ·½Ê½¶¼ÉèÖÃÎªGL_CLAMP_TO_EDGE£¬´Ó¶ø³¬³öÆÁÄ»Ê±ÖØ¸´È¡Öµ£¬´ïµ½Õý³£µÄÐ§¹û
+		//4.ºËÐ§¹û
+		vec3 sampleTex[9];
+	    for(int i = 0; i < 9; i++) {
+	        sampleTex[i] = vec3(texture(screenTexture, TexCoords.st + offsets[i]));
+	    }
+	    vec3 col = vec3(0.0);
+	    for(int i = 0; i < 9; i++) {
+	        col += sampleTex[i] * kernel_Sharpen[i];		//Èñ»¯Ð§¹û
+	//        col += sampleTex[i] * kernel_Border[i];		//±ßÔµ¼ì²âÐ§¹û
+	//		col += sampleTex[i] * kernel_Blurring[i];		//Ä£ºýÐ§¹û 
+		}
+	    FragColor = vec4(col, 1.0);
+		FragColor = gammaCorrection(FragColor);
+		//²¹³ä£ºÊ¹ÓÃºËÐ§¹ûÊ±±ßÔµÏñËØµÄ²ÉÑù¿ÉÄÜ»á²Éµ½window½çÃæÍâÃæµÄÏñËØ£¬µ¼ÖÂ²úÉúÆæ¹ÖµÄ±ßÔµÐ§¹û
+		//½â¾ö£º½«ÆÁÄ»ÎÆÀíµÄ»·ÈÆ·½Ê½¶¼ÉèÖÃÎªGL_CLAMP_TO_EDGE£¬´Ó¶ø³¬³öÆÁÄ»Ê±ÖØ¸´È¡Öµ£¬´ïµ½Õý³£µÄÐ§¹û
+	}
 
 } 
