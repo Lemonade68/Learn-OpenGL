@@ -121,5 +121,11 @@
     <None Include="..\..\Shader\blinn_phong_vs.glsl">
       <Filter>资源文件</Filter>
     </None>
+    <None Include="..\..\Shader\gamma_correction_fs.glsl">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\..\Shader\gamma_correction_vs.glsl">
+      <Filter>资源文件</Filter>
+    </None>
   </ItemGroup>
 </Project>

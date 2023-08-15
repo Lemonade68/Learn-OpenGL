@@ -162,6 +162,8 @@
     <None Include="..\..\Shader\fragment_shader.glsl" />
     <None Include="..\..\Shader\framebuffer_screen_fs.glsl" />
     <None Include="..\..\Shader\framebuffer_screen_vs.glsl" />
+    <None Include="..\..\Shader\gamma_correction_fs.glsl" />
+    <None Include="..\..\Shader\gamma_correction_vs.glsl" />
     <None Include="..\..\Shader\light_fs.glsl" />
     <None Include="..\..\Shader\light_vs.glsl" />
     <None Include="..\..\Shader\nano_fs.glsl" />
