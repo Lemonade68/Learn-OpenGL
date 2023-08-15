@@ -157,6 +157,8 @@
   <ItemGroup>
     <None Include="..\..\Shader\basic_fs.glsl" />
     <None Include="..\..\Shader\basic_vs.glsl" />
+    <None Include="..\..\Shader\blinn_phong_fs.glsl" />
+    <None Include="..\..\Shader\blinn_phong_vs.glsl" />
     <None Include="..\..\Shader\fragment_shader.glsl" />
     <None Include="..\..\Shader\framebuffer_screen_fs.glsl" />
     <None Include="..\..\Shader\framebuffer_screen_vs.glsl" />
