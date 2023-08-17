@@ -168,6 +168,12 @@
 //	//画法线的shader
 //	Shader modelShaderNormal("../../Shader/nano_vs_normal.glsl", "../../Shader/nano_fs_normal.glsl", "../../Shader/nano_gs_normal.glsl");
 //
+//	//阴影shader
+//	Shader simpleDepthShader("../../Shader/shadow_mapping_depth_vs.glsl", "../../Shader/shadow_mapping_depth_fs.glsl");
+//
+//	//debugDepthQuad
+//	Shader debugDepthQuad("../../Shader/quad_depth_vs.glsl", "../../Shader/quad_depth_fs.glsl");
+//
 //	float cubeVertices[] = {
 //		// positions          // normals           // texture coords
 //		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
@@ -480,6 +486,9 @@
 //	modelShader.use();
 //	modelShader.setInt("skybox", 3);		//默认的纹理单元已经使用了3个（diffuse1, diffuse2, specular1），因此天空盒要设置成第四个modelShader
 //
+//	debugDepthQuad.use();
+//	debugDepthQuad.setInt("depthMap", 0);
+//
 //	//修改成多采样来减少锯齿：
 //	//framebuffer configuration
 //	unsigned int framebuffer;					//多采样framebuffer
@@ -538,6 +547,31 @@
 //	//now that we actually created the framebuffer and added all attachments we want to check if it is actually complete now
 //	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 //		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
+//	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+//
+//
+//	//深度贴图
+//	GLuint depthMapFBO;			//GLuint就是unsigned int的别名
+//	glGenFramebuffers(1, &depthMapFBO);
+//
+//	//创建2D纹理，供帧缓冲的深度缓冲使用    1024:深度贴图的分辨率
+//	const GLuint SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+//	GLuint depthMap;
+//	glGenTextures(1, &depthMap);
+//	glBindTexture(GL_TEXTURE_2D, depthMap);
+//	//只关心深度值，因此将纹理格式指定为GL_DEPTH_COMPONENT
+//	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+//
+//	//绑定为深度缓冲
+//	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+//	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+//	//只需要深度信息，不需要颜色缓冲，但是帧缓冲对象必须要有颜色缓冲，因此显式声明不使用颜色数据进行渲染
+//	glDrawBuffer(GL_NONE);
+//	glReadBuffer(GL_NONE);
 //	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 //
 //

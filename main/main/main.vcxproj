@@ -172,12 +172,16 @@
     <None Include="..\..\Shader\nano_gs_normal.glsl" />
     <None Include="..\..\Shader\nano_vs.glsl" />
     <None Include="..\..\Shader\nano_vs_normal.glsl" />
+    <None Include="..\..\Shader\quad_depth_fs.glsl" />
+    <None Include="..\..\Shader\quad_depth_vs.glsl" />
     <None Include="..\..\Shader\reflectbox_fs.glsl" />
     <None Include="..\..\Shader\reflectbox_vs.glsl" />
     <None Include="..\..\Shader\refractbox_fs.glsl" />
     <None Include="..\..\Shader\refractbox_vs.glsl" />
     <None Include="..\..\Shader\rock_fs.glsl" />
     <None Include="..\..\Shader\rock_vs.glsl" />
+    <None Include="..\..\Shader\shadow_mapping_depth_fs.glsl" />
+    <None Include="..\..\Shader\shadow_mapping_depth_vs.glsl" />
     <None Include="..\..\Shader\skybox_fs.glsl" />
     <None Include="..\..\Shader\skybox_vs.glsl" />
     <None Include="..\..\Shader\stencil_fs.glsl" />
