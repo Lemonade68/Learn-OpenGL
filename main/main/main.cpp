@@ -88,6 +88,9 @@ int main() {
 	//configure global opengl state
 	//-----------------------------------------------------------
 	glEnable(GL_DEPTH_TEST);				//设置启用深度测试
+	//glEnable(GL_STENCIL_TEST);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);		//设置因子
 
 	//bulid shader program
 	//-----------------------------------------------------------
@@ -305,10 +308,14 @@ int main() {
 	windows.push_back(glm::vec3(0.5f, 0.0f, -0.6f));
 
 	glm::vec3 pointLightPositions[] = {
-		glm::vec3(0.7f,  0.2f,  2.0f),
+		/*glm::vec3(0.7f,  0.2f,  2.0f),
 		glm::vec3(-2.3f, 0.1f, -1.0f),
 		glm::vec3(0.0f,  2.0f, -2.0f),
-		glm::vec3(-3.0f,  1.0f,  3.0f)
+		glm::vec3(-3.0f,  1.0f,  3.0f)*/
+		glm::vec3(0.7f,  0.2f,  10.0f),
+		glm::vec3(-2.3f, 0.1f, 10.0f),
+		glm::vec3(0.0f,  2.0f, 0.0f),
+		glm::vec3(-3.0f,  1.0f,  10.0f)
 	};
 
 	// cube VAO
@@ -399,10 +406,10 @@ int main() {
 
 	// load textures (we now use a utility function to keep the code more organized)
 	// -----------------------------------------------------------------------------
-	unsigned int cubeTexture = loadTexture("../../Textures/marble.jpg", true);
-	unsigned int floorTexture = loadTexture("../../Textures/metal.png", true);
+	unsigned int cubeTexture = loadTexture("../../Textures/marble.jpg", false);
+	unsigned int floorTexture = loadTexture("../../Textures/metal.png", false);
 	//unsigned int transparentTexture = loadTexture("../../Textures/grass.png");
-	unsigned int transparentTexture = loadTexture("../../Textures/window.png", true);
+	unsigned int transparentTexture = loadTexture("../../Textures/window.png", false);
 
 	//加载天空盒：
 	vector<std::string> faces{
@@ -418,7 +425,8 @@ int main() {
 	// shader configuration
 	// --------------------
 	shader.use();
-	shader.setInt("texture1", 0);
+	shader.setInt("diffuseTexture", 0);
+	shader.setInt("shadowMap", 1);
 
 	transparentShader.use();
 	transparentShader.setInt("texture_diffuse1", 0);
@@ -564,7 +572,7 @@ int main() {
 		//设置光的转换矩阵（将物体从世界坐标转换到灯源的坐标下）
 		glm::mat4 lightProjection, lightView;
 		glm::mat4 lightSpaceMatrix;
-		float near_plane = 0.0f, far_plane = 10.5f;
+		float near_plane = 0.0f, far_plane = 15.5f;
 		lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
 		lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
 		lightSpaceMatrix = lightProjection * lightView;
@@ -594,10 +602,12 @@ int main() {
 		glBindTexture(GL_TEXTURE_2D, cubeTexture);
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(-1.0f, -0.5f, -1.0f));
+		model = glm::scale(model, glm::vec3(0.5f));
 		simpleDepthShader.setMat4("model", model);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(2.0f, -0.5f, 0.0f));
+		model = glm::scale(model, glm::vec3(0.5f));
 		simpleDepthShader.setMat4("model", model);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
@@ -617,120 +627,127 @@ int main() {
 		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		// render Depth map to quad for visual debugging
-		// ---------------------------------------------
-		debugDepthQuad.use();
-		debugDepthQuad.setFloat("near_plane", near_plane);
-		debugDepthQuad.setFloat("far_plane", far_plane);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, depthMap);
-		glBindVertexArray(quadVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
+		//// 用于检查深度贴图是否有误
+		//// render Depth map to quad for visual debugging		
+		//// ---------------------------------------------
+		//debugDepthQuad.use();
+		//debugDepthQuad.setFloat("near_plane", near_plane);
+		//debugDepthQuad.setFloat("far_plane", far_plane);
+		//glActiveTexture(GL_TEXTURE0);
+		//glBindTexture(GL_TEXTURE_2D, depthMap);
+		//glBindVertexArray(quadVAO);
+		//glDrawArrays(GL_TRIANGLES, 0, 6);
+
+		//开始正式绘制场景
+		model = glm::mat4(1.0f);
+		glm::mat4 view = camera.GetViewMatrix();
+		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+
+		// set uniforms
+		shaderSingleColor.use();
+		shaderSingleColor.setMat4("view", view);
+		shaderSingleColor.setMat4("projection", projection);
+
+		transparentShader.use();
+		transparentShader.setMat4("view", view);
+		transparentShader.setMat4("projection", projection);
+
+		reflectShader.use();
+		reflectShader.setMat4("view", view);
+		reflectShader.setMat4("projection", projection);
+
+		refractShader.use();
+		refractShader.setMat4("view", view);
+		refractShader.setMat4("projection", projection);
+
+		modelShader.use();
+		//modelShader.setMat4("view", view);
+		//modelShader.setMat4("projection", projection);
+		modelShader.setVec3("viewPos", camera.Position);
+		// add time component to geometry shader in the form of a uniform
+		//modelShader.setFloat("time", static_cast<float>(glfwGetTime()));
+
+		modelShaderNormal.use();
+		modelShaderNormal.setMat4("view", view);
+		modelShaderNormal.setMat4("projection", projection);
+
+		//加载光源参数
+		loadShaderLightPara(modelShader, pointLightPositions);
+		loadShaderLightPara(shader, pointLightPositions);
+
+		//===============================================================================
+
+		//使用uniform buffer object来实现对shader&modelShader的view/projection矩阵的同时设置
+		unsigned int uniformBlockIndexShader = glGetUniformBlockIndex(shader.ID, "Matrices");
+		unsigned int uniformBlockIndexModelShader = glGetUniformBlockIndex(modelShader.ID, "Matrices");
+
+		//将顶点着色器的uniform块设置为绑定点0
+		glUniformBlockBinding(shader.ID, uniformBlockIndexShader, 0);
+		glUniformBlockBinding(modelShader.ID, uniformBlockIndexModelShader, 0);
+
+		//创建uniform缓冲对象，并绑定到点0
+		unsigned int uboMatrices;
+		glGenBuffers(1, &uboMatrices);
+
+		glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
+		//先不分配，之后使用subdata分配
+		glBufferData(GL_UNIFORM_BUFFER, 2 * sizeof(glm::mat4), NULL, GL_STATIC_DRAW);
+		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+		//绑定到点0
+		glBindBufferRange(GL_UNIFORM_BUFFER, 0, uboMatrices, 0, 2 * sizeof(glm::mat4));
+
+		//填充缓冲（使用subdata）
+		glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
+		glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(projection));
+		glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(view));
+		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+		//===============================================================================
 
 
+		shader.use();
+		//shader.setMat4("view", view);
+		//shader.setMat4("projection", projection);
+		//一定记得要加 ！！！
+		shader.setVec3("viewPos", camera.Position);
+		shader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
 
-		//glm::mat4 model = glm::mat4(1.0f);
-		//glm::mat4 view = camera.GetViewMatrix();
-		//glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-
-		//// set uniforms
-		//shaderSingleColor.use();
-		//shaderSingleColor.setMat4("view", view);
-		//shaderSingleColor.setMat4("projection", projection);
-
-		//transparentShader.use();
-		//transparentShader.setMat4("view", view);
-		//transparentShader.setMat4("projection", projection);
-
-		//reflectShader.use();
-		//reflectShader.setMat4("view", view);
-		//reflectShader.setMat4("projection", projection);
-
-		//refractShader.use();
-		//refractShader.setMat4("view", view);
-		//refractShader.setMat4("projection", projection);
-
-		//modelShader.use();
-		////modelShader.setMat4("view", view);
-		////modelShader.setMat4("projection", projection);
-		//modelShader.setVec3("viewPos", camera.Position);
-		//// add time component to geometry shader in the form of a uniform
-		////modelShader.setFloat("time", static_cast<float>(glfwGetTime()));
-
-		//modelShaderNormal.use();
-		//modelShaderNormal.setMat4("view", view);
-		//modelShaderNormal.setMat4("projection", projection);
-
-		////加载光源参数
-		//loadShaderLightPara(modelShader, pointLightPositions);
-		//loadShaderLightPara(shader, pointLightPositions);
-
-		////===============================================================================
-
-		////使用uniform buffer object来实现对shader&modelShader的view/projection矩阵的同时设置
-		//unsigned int uniformBlockIndexShader = glGetUniformBlockIndex(shader.ID, "Matrices");
-		//unsigned int uniformBlockIndexModelShader = glGetUniformBlockIndex(modelShader.ID, "Matrices");
-
-		////将顶点着色器的uniform块设置为绑定点0
-		//glUniformBlockBinding(shader.ID, uniformBlockIndexShader, 0);
-		//glUniformBlockBinding(modelShader.ID, uniformBlockIndexModelShader, 0);
-
-		////创建uniform缓冲对象，并绑定到点0
-		//unsigned int uboMatrices;
-		//glGenBuffers(1, &uboMatrices);
-
-		//glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
-		////先不分配，之后使用subdata分配
-		//glBufferData(GL_UNIFORM_BUFFER, 2 * sizeof(glm::mat4), NULL, GL_STATIC_DRAW);
-		//glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-		////绑定到点0
-		//glBindBufferRange(GL_UNIFORM_BUFFER, 0, uboMatrices, 0, 2 * sizeof(glm::mat4));
-
-		////填充缓冲（使用subdata）
-		//glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
-		//glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(projection));
-		//glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(view));
-		//glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-		////===============================================================================
-
-
-		//shader.use();
-		////shader.setMat4("view", view);
-		////shader.setMat4("projection", projection);
-		////一定记得要加 ！！！
-		//shader.setVec3("viewPos", camera.Position);
-
-		////先画所有不透明的物体
-		////1.开始时绘制地板 —— 不需要边框，因此设置不经过模板缓冲
+		//先画所有不透明的物体
+		//1.开始时绘制地板 —— 不需要边框，因此设置不经过模板缓冲
 		//glStencilMask(0x00);		//禁用写入
 
-		//glBindVertexArray(planeVAO);
-		//glActiveTexture(GL_TEXTURE0);		//这里可以没有（默认激活0）
-		//glBindTexture(GL_TEXTURE_2D, floorTexture);
-		//shader.setMat4("model", glm::mat4(1.0f));
-		//glDrawArrays(GL_TRIANGLES, 0, 6);
-		//glBindVertexArray(0);
+		glBindVertexArray(planeVAO);
+		glActiveTexture(GL_TEXTURE0);		//这里可以没有（默认激活0）
+		glBindTexture(GL_TEXTURE_2D, floorTexture);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, depthMap);
+		shader.setMat4("model", glm::mat4(1.0f));
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+		glBindVertexArray(0);
 
-		////2.绘制物体，但是要经过模板测试，修改stencil buffer
+		//2.绘制物体，但是要经过模板测试，修改stencil buffer
 		//glStencilMask(0xFF);			//允许写入
 		//glStencilFunc(GL_ALWAYS, 1, 0xFF);		//只要进行绘制，都永远通过，且更改模板值为1（op规定的）
-		////glEnable(GL_CULL_FACE);		//启用面剔除
+		//glEnable(GL_CULL_FACE);		//启用面剔除
 
-		//glBindVertexArray(cubeVAO);
-		//glActiveTexture(GL_TEXTURE0);
-		//glBindTexture(GL_TEXTURE_2D, cubeTexture);
-		//model = glm::mat4(1.0f);
-		//model = glm::translate(model, glm::vec3(-1.0f, -0.5f, -1.0f));
-		//shader.setMat4("model", model);
-		//glDrawArrays(GL_TRIANGLES, 0, 36);
-		//model = glm::mat4(1.0f);
-		//model = glm::translate(model, glm::vec3(2.0f, -0.5f, 0.0f));
-		//shader.setMat4("model", model);
-		//glDrawArrays(GL_TRIANGLES, 0, 36);
+		glBindVertexArray(cubeVAO);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, cubeTexture);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, depthMap);
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-1.0f, -0.5f, -1.0f));
+		model = glm::scale(model, glm::vec3(0.5f));
+		shader.setMat4("model", model);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(2.0f, -0.5f, 0.0f));
+		model = glm::scale(model, glm::vec3(0.5f));
+		shader.setMat4("model", model);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 
-		////glDisable(GL_CULL_FACE);
+		//glDisable(GL_CULL_FACE);
 
 		////将物体放大一点点后绘制（禁止写入模板值），只有非1的位置会被绘制，达到边缘效果
 		//glStencilFunc(GL_NOTEQUAL, 1, 0xFF);	//不为1的才能绘制（对于屏幕而言 —— 所以不是整个覆盖在外面而是边缘）
@@ -759,106 +776,106 @@ int main() {
 		//glStencilFunc(GL_ALWAYS, 0, 0xFF);		//默认写0，只有在需要模板写入时才写1
 		//glEnable(GL_DEPTH_TEST);
 
-		////画点光源物体
-		//// also draw the lamp object(s)
-		//lightCubeShader.use();
-		//lightCubeShader.setMat4("projection", projection);
-		//lightCubeShader.setMat4("view", view);
+		//画点光源物体
+		// also draw the lamp object(s)
+		lightCubeShader.use();
+		lightCubeShader.setMat4("projection", projection);
+		lightCubeShader.setMat4("view", view);
 
-		//// we now draw as many light bulbs as we have point lights.
-		//glBindVertexArray(lightCubeVAO);
-		//for (unsigned int i = 0; i < 4; i++) {
-		//	model = glm::mat4(1.0f);
-		//	model = glm::translate(model, pointLightPositions[i]);
-		//	model = glm::scale(model, glm::vec3(0.2f)); // Make it a smaller cube
-		//	lightCubeShader.setMat4("model", model);
-		//	glDrawArrays(GL_TRIANGLES, 0, 36);
-		//}
+		// we now draw as many light bulbs as we have point lights.
+		glBindVertexArray(lightCubeVAO);
+		for (unsigned int i = 0; i < 4; i++) {
+			model = glm::mat4(1.0f);
+			model = glm::translate(model, pointLightPositions[i]);
+			model = glm::scale(model, glm::vec3(0.2f)); // Make it a smaller cube
+			lightCubeShader.setMat4("model", model);
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
 
-		//model = glm::mat4(1.0f);
-		//model = glm::translate(model, lightPos);
-		//model = glm::scale(model, glm::vec3(0.2f)); // Make it a smaller cube
-		//lightCubeShader.setMat4("model", model);
-		//glDrawArrays(GL_TRIANGLES, 0, 36);
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, lightPos);
+		model = glm::scale(model, glm::vec3(0.2f)); // Make it a smaller cube
+		lightCubeShader.setMat4("model", model);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 
-		////反射光物体：
-		//reflectShader.use();
-		//model = glm::mat4(1.0f);
-		//model = glm::translate(model, glm::vec3(-2.0, 0.0, 2.0));
-		//reflectShader.setMat4("model", model);
-		//reflectShader.setVec3("cameraPos", camera.Position);
-		//glBindVertexArray(reflectVAO);
-		//glActiveTexture(GL_TEXTURE0);
-		//glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
-		//glDrawArrays(GL_TRIANGLES, 0, 36);
-		//glBindVertexArray(0);
+		//反射光物体：
+		reflectShader.use();
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-2.0, 0.0, 2.0));
+		reflectShader.setMat4("model", model);
+		reflectShader.setVec3("cameraPos", camera.Position);
+		glBindVertexArray(reflectVAO);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glBindVertexArray(0);
 
-		////折射光物体：
-		//refractShader.use();
-		//model = glm::mat4(1.0f);
-		//model = glm::translate(model, glm::vec3(-4.0, 0.0, 2.0));
-		//refractShader.setMat4("model", model);
-		//refractShader.setVec3("cameraPos", camera.Position);
-		//glBindVertexArray(reflectVAO);
-		//glActiveTexture(GL_TEXTURE0);
-		//glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
-		//glDrawArrays(GL_TRIANGLES, 0, 36);
-		//glBindVertexArray(0);
+		//折射光物体：
+		refractShader.use();
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-4.0, 0.0, 2.0));
+		refractShader.setMat4("model", model);
+		refractShader.setVec3("cameraPos", camera.Position);
+		glBindVertexArray(reflectVAO);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glBindVertexArray(0);
 
-		////反射/折射模型（具体在nano_fs里面改）
-		//modelShader.use();
-		//model = glm::mat4(1.0f);
-		//model = glm::translate(model, glm::vec3(-3.0, -0.5, 2.0));
-		//model = glm::scale(model, glm::vec3(0.15f));
-		//modelShader.setMat4("model", model);
-		////不是默认的纹理单元0，需要额外绑定（纹理名称不是规定名称，需要额外设置）
-		//glActiveTexture(GL_TEXTURE3);
-		//glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
-		//ourModel.Draw(modelShader);
+		//反射/折射模型（具体在nano_fs里面改）
+		modelShader.use();
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-3.0, -0.5, 2.0));
+		model = glm::scale(model, glm::vec3(0.15f));
+		modelShader.setMat4("model", model);
+		//不是默认的纹理单元0，需要额外绑定（纹理名称不是规定名称，需要额外设置）
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+		ourModel.Draw(modelShader);
 
-		////绘制法线
-		//modelShaderNormal.use();
-		//model = glm::mat4(1.0f);
-		//model = glm::translate(model, glm::vec3(-3.0, -0.5, 2.0));
-		//model = glm::scale(model, glm::vec3(0.15f));
-		//modelShaderNormal.setMat4("model", model);
-		//ourModel.Draw(modelShaderNormal);
+		//绘制法线
+		modelShaderNormal.use();
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-3.0, -0.5, 2.0));
+		model = glm::scale(model, glm::vec3(0.15f));
+		modelShaderNormal.setMat4("model", model);
+		ourModel.Draw(modelShaderNormal);
 
-		////优化：最后画天空盒
-		////（注意要在半透明物体前画，不然透明部分如果还没有其他颜色的话会变成背景色(写入深度数据)，
-		////致使天空盒通不过深度测试，导致窗户看不到天空盒）
+		//优化：最后画天空盒
+		//（注意要在半透明物体前画，不然透明部分如果还没有其他颜色的话会变成背景色(写入深度数据)，
+		//致使天空盒通不过深度测试，导致窗户看不到天空盒）
 
-		//glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
-		////使用LEQUAL的原因：深度测试的默认初始值为1，在经过优化后，天空盒的深度一直为1，如果是LESS，可能通不过测试，无法画出来
-		//skyboxShader.use();
-		//view = glm::mat4(glm::mat3(camera.GetViewMatrix())); // remove translation from the view matrix
-		//skyboxShader.setMat4("view", view);
-		//skyboxShader.setMat4("projection", projection);
-		//// skybox cube
-		//glBindVertexArray(skyboxVAO);
-		//glActiveTexture(GL_TEXTURE0);
-		//glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
-		//glDrawArrays(GL_TRIANGLES, 0, 36);
-		//glBindVertexArray(0);
-		//glDepthFunc(GL_LESS); // set depth function back to default
+		glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
+		//使用LEQUAL的原因：深度测试的默认初始值为1，在经过优化后，天空盒的深度一直为1，如果是LESS，可能通不过测试，无法画出来
+		skyboxShader.use();
+		view = glm::mat4(glm::mat3(camera.GetViewMatrix())); // remove translation from the view matrix
+		skyboxShader.setMat4("view", view);
+		skyboxShader.setMat4("projection", projection);
+		// skybox cube
+		glBindVertexArray(skyboxVAO);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glBindVertexArray(0);
+		glDepthFunc(GL_LESS); // set depth function back to default
 
-		////画窗户
-		////记录距离位置
-		//std::map<float, glm::vec3> sorted;
-		//for (unsigned int i = 0; i < windows.size(); i++) {
-		//	float distance = glm::length(camera.Position - windows[i]);
-		//	sorted[distance] = windows[i];
-		//}
+		//画窗户
+		//记录距离位置
+		std::map<float, glm::vec3> sorted;
+		for (unsigned int i = 0; i < windows.size(); i++) {
+			float distance = glm::length(camera.Position - windows[i]);
+			sorted[distance] = windows[i];
+		}
 
-		//transparentShader.use();
-		//glBindVertexArray(transparentVAO);
-		//glBindTexture(GL_TEXTURE_2D, transparentTexture);
-		//for (std::map<float, glm::vec3>::reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it) {
-		//	model = glm::mat4(1.0f);
-		//	model = glm::translate(model, it->second);
-		//	transparentShader.setMat4("model", model);
-		//	glDrawArrays(GL_TRIANGLES, 0, 6);
-		//}
+		transparentShader.use();
+		glBindVertexArray(transparentVAO);
+		glBindTexture(GL_TEXTURE_2D, transparentTexture);
+		for (std::map<float, glm::vec3>::reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it) {
+			model = glm::mat4(1.0f);
+			model = glm::translate(model, it->second);
+			transparentShader.setMat4("model", model);
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+		}
 
 		////至此，framebuffer上的已经画完了，画到了framebuffer的color buffer附件上 —— textureColorBufferMultiSampled上
 		////现在blit（位块传输）multisampled buffer(s) to normal colorbuffer of intermediate FBO.
@@ -893,7 +910,7 @@ int main() {
 		//glBindTexture(GL_TEXTURE_2D, screenTexture);	// use the color attachment texture as the texture of the quad plane
 		//glDrawArrays(GL_TRIANGLES, 0, 6);
 
-		////glEnable(GL_STENCIL_TEST);
+		//glEnable(GL_STENCIL_TEST);
 
 		//检查并调用事件，交换缓冲
 		//----------------------------------------

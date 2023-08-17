@@ -174,7 +174,7 @@ vector<Texture> Model::loadMaterialTextures(aiMaterial *mat, aiTextureType type,
 		}
 		if (!skip) {		//如果纹理还没有被加载，则加载它
 			Texture texture;
-			texture.id = TextureFromFile(str.C_Str(), directory, true);
+			texture.id = TextureFromFile(str.C_Str(), directory, false);
 			texture.type = typeName;
 			texture.path = str.C_Str();
 			textures.push_back(texture);

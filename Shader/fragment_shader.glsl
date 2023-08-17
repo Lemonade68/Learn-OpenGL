@@ -45,6 +45,8 @@ vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
 in vec3 FragPos;	//传入顶点的世界坐标
 in vec3 Normal;
 in vec2 TexCoords;
+in vec4 FragPosLightSpace;		//可移动点光源下的物体坐标
+
 out vec4 FragColor;
 
 uniform vec3 viewPos;
@@ -58,7 +60,26 @@ float LinearizeDepth(float depth) {
     return (2.0 * near * far) / (far + near - z * (far - near));    
 }
 
-uniform sampler2D texture1;
+uniform sampler2D diffuseTexture;		//正常材质
+uniform sampler2D shadowMap;			//阴影材质
+
+float ShadowCalculation(vec4 fragPosLightSpace){
+	// 执行透视除法
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    // [-1,1]变换到[0,1]的范围, （光源视角下，深度z的范围应该在0-1， 纹理坐标的范围也应该在0-1）
+    projCoords = projCoords * 0.5 + 0.5;
+    // 取得最近点的深度(使用[0,1]范围下的fragPosLight当坐标)
+    float closestDepth = texture(shadowMap, projCoords.xy).r; 
+    // 取得当前片段在光源视角下的深度
+    float currentDepth = projCoords.z;
+    // 检查当前片段是否在阴影中
+    float shadow = currentDepth > closestDepth  ? 1.0 : 0.0;
+
+    return shadow;
+}
+
+
+bool isMovableLight = true;		//只针对可移动点光源进行阴影的模拟
 
 void main() {    
 	vec3 norm = normalize(Normal);	//法线单位化
@@ -86,11 +107,12 @@ vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir){
 	float diff = max(dot(normal, lightDir), 0.0);
 	//镜面反射
 	vec3 reflectDir = reflect(-lightDir, normal);
-	float spec = pow(max(dot(reflectDir,viewDir),0.0), 32.0f);
+	vec3 halfwayDir = normalize(lightDir + viewDir);		//blinn-phong shading
+	float spec = pow(max(dot(normal, halfwayDir), 0.0), 64.0);
 	//合并结果
-	vec3 ambient = light.ambient * vec3(texture(texture1, TexCoords));
-	vec3 diffuse = light.diffuse * diff * vec3(texture(texture1, TexCoords));
-	vec3 specular = light.specular * spec * vec3(texture(texture1, TexCoords));
+	vec3 ambient = light.ambient * vec3(texture(diffuseTexture, TexCoords));
+	vec3 diffuse = light.diffuse * diff * vec3(texture(diffuseTexture, TexCoords));
+	vec3 specular = light.specular * spec * vec3(texture(diffuseTexture, TexCoords));
 
 	return ambient + diffuse + specular;
 }
@@ -102,21 +124,29 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir){
 	float diff = max(dot(normal, lightDir), 0.0);
 	//镜面反射
 	vec3 reflectDir = reflect(-lightDir, normal);
-	float spec = pow(max(dot(reflectDir,viewDir),0.0), 32.0f);
+	vec3 halfwayDir = normalize(lightDir + viewDir);		//blinn-phong shading
+	float spec = pow(max(dot(normal, halfwayDir), 0.0), 64.0);
 	//衰减
 	float distance = length(light.position - fragPos);
 	float attenuation = 1.0/(light.constant + light.linear * distance + light.quadratic * distance * distance);
 
 	//合并结果
-	vec3 ambient = light.ambient * vec3(texture(texture1, TexCoords));
-	vec3 diffuse = light.diffuse * diff * vec3(texture(texture1, TexCoords));
-	vec3 specular = light.specular * spec * vec3(texture(texture1, TexCoords));
+	vec3 ambient = light.ambient * vec3(texture(diffuseTexture, TexCoords));
+	vec3 diffuse = light.diffuse * diff * vec3(texture(diffuseTexture, TexCoords));
+	vec3 specular = light.specular * spec * vec3(texture(diffuseTexture, TexCoords));
 
 	ambient *= attenuation;
 	diffuse *= attenuation;
 	specular *= attenuation;
 
-	return ambient + diffuse + specular;
+	if(isMovableLight){
+		float shadow = ShadowCalculation(FragPosLightSpace);
+		vec3 result = ambient + (1.0 - shadow) * (diffuse + specular);		//shadow的值为0或1
+		isMovableLight = false;
+		return result;
+	}
+	else
+		return ambient + diffuse + specular;
 }
 
 //聚光
@@ -137,9 +167,9 @@ vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir){
 	float attenuation = 1.0/(light.constant + light.linear * distance + light.quadratic * distance * distance);
 
 	//合并结果
-	vec3 ambient = light.ambient * vec3(texture(texture1, TexCoords));
-	vec3 diffuse = light.diffuse * diff * vec3(texture(texture1, TexCoords));
-	vec3 specular = light.specular * spec * vec3(texture(texture1, TexCoords));
+	vec3 ambient = light.ambient * vec3(texture(diffuseTexture, TexCoords));
+	vec3 diffuse = light.diffuse * diff * vec3(texture(diffuseTexture, TexCoords));
+	vec3 specular = light.specular * spec * vec3(texture(diffuseTexture, TexCoords));
 
 	ambient *= attenuation;
 	diffuse *= attenuation;

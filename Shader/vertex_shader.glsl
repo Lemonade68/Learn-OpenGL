@@ -3,11 +3,14 @@ layout (location = 0) in vec3 aPos;
 layout (location = 1) in vec3 aNormal;
 layout (location = 2) in vec2 aTexCoords;
 
+//教程这里用的是输出块（我直接搞了）
 out vec2 TexCoords;
 out vec3 FragPos;
 out vec3 Normal;
+out vec4 FragPosLightSpace;
 
 uniform mat4 model;
+uniform mat4 lightSpaceMatrix;
 
 //使用uniform buffer object
 layout(std140) uniform Matrices{
@@ -23,5 +26,6 @@ void main()
 	//法线矩阵被定义为：模型矩阵左上角3x3部分的逆矩阵的转置矩阵
 	Normal = mat3(transpose(inverse(model))) * aNormal;		//使用法线矩阵*将法线向量也变到世界坐标
     TexCoords = aTexCoords;    
+	FragPosLightSpace = lightSpaceMatrix * vec4(FragPos, 1.0);
 }
 	
