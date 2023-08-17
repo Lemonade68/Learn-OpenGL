@@ -57,6 +57,8 @@ uniform sampler2D texture_diffuse1;		//漫反射材质
 uniform sampler2D texture_diffuse2;		//实际上是反射贴图，欺骗assimp为diffuse
 uniform sampler2D texture_specular1;	//镜面反射材质
 
+uniform bool torchMode;
+
 void main()
 {   
 	vec3 norm = normalize(Normal);	//法线单位化
@@ -72,7 +74,8 @@ void main()
 	result += CalcPointLight(moveableLight, norm, FragPos, viewDir);		//可移动点光源
 
 	//第三阶段：聚光
-	result += CalcSpotLight(spotLight, norm, FragPos, viewDir);
+	if(torchMode)
+		result += CalcSpotLight(spotLight, norm, FragPos, viewDir);
 
 	//添加反射
 	vec3 I = normalize(FragPos - viewPos);

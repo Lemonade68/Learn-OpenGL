@@ -25,8 +25,8 @@ unsigned int loadCubemap(std::vector<std::string> faces);						//¼ÓÔØÌì¿ÕºĞµÄº¯Ê
 void loadShaderLightPara(Shader &shader, glm::vec3 pointLightPositions[]);
 
 //settings
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
+const unsigned int SCR_WIDTH = 1280;
+const unsigned int SCR_HEIGHT = 1024;
 
 //´´½¨ÉãÏñ»ú(Êµ¼ÊÉÏÊÇÎïÌåÔÚÔË¶¯£¬Í¨¹ıloolAt¾ØÕóÀ´ÈÃÎïÌå·´×ÅÔË¶¯Ôì³ÉÉãÏñ»úÒÆ¶¯µÄ¼ÙÏó)
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
@@ -44,6 +44,8 @@ glm::vec3 lightPos(1.2f, 1.0f, 2.0f);		//¼ÇÂ¼¹âÔ´Î»ÖÃµÄÎ»ÒÆ¾ØÕó£¨¸ømodelÓÃµÄ£©
 
 bool CoreKeyPressed = false;
 bool CoreMode = false;
+bool torchlightPressed = false;
+bool torchMode = false;
 
 int main() {
 	// glfw: initialize and configure
@@ -524,8 +526,11 @@ int main() {
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	GLfloat borderColor[] = { 1.0, 1.0, 1.0, 1.0 };		//ÍâÎ§·µ»Ø1.0µÄÉî¶ÈÖµ(ÆäËûÉî¶È¿Ï¶¨±ÈËûĞ¡)
+	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	//¡ü ÕâÑùÉèÖÃÊ±ÔÚ·¶Î§ÍâµÄÇøÓò£¬ÎÆÀíº¯Êı×Ü»á·µ»Ø1.0µÄÉî¶ÈÖµ£¬´Ó¶øÒõÓ°ÖµÎª0.0£¨¶ø²»ÊÇGL_REPEAT£©
 
 	//°ó¶¨ÎªÉî¶È»º³å
 	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
@@ -586,15 +591,26 @@ int main() {
 		glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
 		glClear(GL_DEPTH_BUFFER_BIT);
 		
+		//½â¾öĞü¸¡µÄÎÊÌâ(ºÃÏñ²¢Ã»ÓĞ½â¾ö)   Ê¹ÓÃÕıÃæÌŞ³ı
+		//glEnable(GL_CULL_FACE);
+		//glCullFace(GL_FRONT);
+
+		//Êµ¼ÊÉÏ²¢Ã»ÓĞ½â¾öÊ§ÕæÎÊÌâ£¬Ö»ÊÇ½«Ê§Õæ±äµ½ÁËÁ¢·½ÌåÄÚ²¿£¬µ«¿ÉÄÜ»á²úÉúÂ©¹âÎÊÌâ
+		//ÏêÇé¿´£ºhttps://www.zhihu.com/question/321779117
+
 		//Éú³ÉÒõÓ°ÌùÍ¼
 		simpleDepthShader.use();		//¶ÔËùÓĞÒª½øĞĞÒõÓ°ÉèÖÃµÄÎïÌåÊ¹ÓÃÕâ¸öshader
+		
+		//ÓÅ»¯£º²»Ê¹ÓÃbias£¬µ«ÊÇ²»äÖÈ¾µØÃæ£¨²»»á²úÉúÒõÓ°µÄµØ·½²»äÖÈ¾ÒõÓ°ÌùÍ¼£©
+		//¼ûÖªºõ´ğ°¸£ºÍõÓÀ±¦   https://www.zhihu.com/question/321779117
+
 		// floor
-		glBindVertexArray(planeVAO);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, floorTexture);
+		//glBindVertexArray(planeVAO);
+		//glActiveTexture(GL_TEXTURE0);
+		//glBindTexture(GL_TEXTURE_2D, floorTexture);
 		glm::mat4 model = glm::mat4(1.0f);
-		simpleDepthShader.setMat4("model", model);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
+		//simpleDepthShader.setMat4("model", model);
+		//glDrawArrays(GL_TRIANGLES, 0, 6);
 
 		// 2¸öcube
 		glBindVertexArray(cubeVAO);
@@ -622,6 +638,9 @@ int main() {
 
 		//Éú³ÉÍê±Ï£¬»Ö¸´Ä¬ÈÏÖ¡»º³å£¬»­µ½ÆÁÄ»ÉÏ
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		
+		//glCullFace(GL_BACK);
+		//glDisable(GL_CULL_FACE);
 
 		// reset viewport  &  Éî¶ÈÑÕÉ«»º´æ
 		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
@@ -664,6 +683,7 @@ int main() {
 		//modelShader.setMat4("view", view);
 		//modelShader.setMat4("projection", projection);
 		modelShader.setVec3("viewPos", camera.Position);
+		modelShader.setBool("torchMode", torchMode);
 		// add time component to geometry shader in the form of a uniform
 		//modelShader.setFloat("time", static_cast<float>(glfwGetTime()));
 
@@ -712,6 +732,7 @@ int main() {
 		//Ò»¶¨¼ÇµÃÒª¼Ó £¡£¡£¡
 		shader.setVec3("viewPos", camera.Position);
 		shader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+		shader.setBool("torchMode", torchMode);
 
 		//ÏÈ»­ËùÓĞ²»Í¸Ã÷µÄÎïÌå
 		//1.¿ªÊ¼Ê±»æÖÆµØ°å ¡ª¡ª ²»ĞèÒª±ß¿ò£¬Òò´ËÉèÖÃ²»¾­¹ıÄ£°å»º³å
@@ -1003,7 +1024,7 @@ void processInput(GLFWwindow *window) {
 	if (glfwGetKey(window, GLFW_KEY_KP_2) == GLFW_PRESS)
 		lightPos.z += cameraSpeed;
 
-	//¿ªÆôÈñ»¯Ğ§¹û
+	//¿ª¹ØÈñ»¯Ğ§¹û		(°´ÏÂÒ»´ÎÓĞĞ§)
 	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS && !CoreKeyPressed) {
 		CoreMode = !CoreMode;
 		CoreKeyPressed = true;
@@ -1011,6 +1032,16 @@ void processInput(GLFWwindow *window) {
 	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_RELEASE)
 	{
 		CoreKeyPressed = false;
+	}
+
+	//¿ª¹ØÊÖµç			(°´ÏÂÒ»´ÎÓĞĞ§)
+	if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS && !torchlightPressed) {
+		torchMode = !torchMode;
+		torchlightPressed = true;
+	}
+	if (glfwGetKey(window, GLFW_KEY_G) == GLFW_RELEASE)
+	{
+		torchlightPressed = false;
 	}
 }
 

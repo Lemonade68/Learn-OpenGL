@@ -49,7 +49,12 @@ in vec4 FragPosLightSpace;		//可移动点光源下的物体坐标
 
 out vec4 FragColor;
 
+bool isMovableLight = true;		//只针对可移动点光源进行阴影的模拟
+
 uniform vec3 viewPos;
+uniform sampler2D diffuseTexture;		//正常材质
+uniform sampler2D shadowMap;			//阴影材质
+uniform bool torchMode;
 
 //深度测试线性变化部分
 float near = 0.1;
@@ -60,10 +65,8 @@ float LinearizeDepth(float depth) {
     return (2.0 * near * far) / (far + near - z * (far - near));    
 }
 
-uniform sampler2D diffuseTexture;		//正常材质
-uniform sampler2D shadowMap;			//阴影材质
 
-float ShadowCalculation(vec4 fragPosLightSpace){
+float ShadowCalculation(PointLight light, vec3 normal, vec4 fragPosLightSpace){
 	// 执行透视除法
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
     // [-1,1]变换到[0,1]的范围, （光源视角下，深度z的范围应该在0-1， 纹理坐标的范围也应该在0-1）
@@ -72,14 +75,40 @@ float ShadowCalculation(vec4 fragPosLightSpace){
     float closestDepth = texture(shadowMap, projCoords.xy).r; 
     // 取得当前片段在光源视角下的深度
     float currentDepth = projCoords.z;
+
+	//修正：添加bias偏移量，从而防止阴影失真
+	float bias = 0.005;				//经试验，这个数值最好
+//	vec3 lightDir = normalize(light.position - FragPos);
+//	float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.005);
     // 检查当前片段是否在阴影中
-    float shadow = currentDepth > closestDepth  ? 1.0 : 0.0;
+//    float shadow = currentDepth - bias > closestDepth  ? 1.0 : 0.0;
+//    float shadow = currentDepth > closestDepth  ? 1.0 : 0.0;
+
+	//进行PCF来将阴影柔和化，减少锯齿的操作：
+	//==========================================================================
+	float shadow = 0.0;
+    vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
+    for(int x = -1; x <= 1; ++x)
+    {
+        for(int y = -1; y <= 1; ++y)
+        {
+            float pcfDepth = texture(shadowMap, projCoords.xy + vec2(x, y) * texelSize).r; 
+            shadow += currentDepth - bias > pcfDepth  ? 1.0 : 0.0;        
+        }    
+    }
+    shadow /= 9.0;
+	//==========================================================================
+
+	//最终：深度贴图不渲染floor，从而不需要bias来偏移  ——  问题：立方体表面仍然会有摩尔纹
+	//因此还是使用bias，但不渲染floor
+	//如果超出远平面：即投影坐标z坐标>1.0时，默认没有阴影
+	if(projCoords.z > 1.0)
+		shadow = 0.0;
 
     return shadow;
 }
 
 
-bool isMovableLight = true;		//只针对可移动点光源进行阴影的模拟
 
 void main() {    
 	vec3 norm = normalize(Normal);	//法线单位化
@@ -95,7 +124,8 @@ void main() {
 	}
 
 	//第三阶段：聚光/手电筒
-	result += CalcSpotLight(spotLight, norm, FragPos, viewDir);
+	if(torchMode)
+		result += CalcSpotLight(spotLight, norm, FragPos, viewDir);
 
 	FragColor = vec4(result, 1.0);
 }
@@ -140,7 +170,7 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir){
 	specular *= attenuation;
 
 	if(isMovableLight){
-		float shadow = ShadowCalculation(FragPosLightSpace);
+		float shadow = ShadowCalculation(light, normal, FragPosLightSpace);
 		vec3 result = ambient + (1.0 - shadow) * (diffuse + specular);		//shadow的值为0或1
 		isMovableLight = false;
 		return result;
