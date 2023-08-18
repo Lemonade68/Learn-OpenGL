@@ -5,6 +5,7 @@ in vec2 TexCoords;
 
 uniform sampler2D screenTexture;
 uniform bool coreMode;
+uniform bool isGamma;
 
 const float offset = 1.0 / 300.0;  
 float gamma = 2.2;					//进行gamma矫正（只需要在后处理四边形上运用一次即可）
@@ -52,25 +53,29 @@ void main()
 		//1.原效果
 		vec3 col = texture(screenTexture, TexCoords).rgb;
 		FragColor = vec4(col, 1.0);
-		FragColor = gammaCorrection(FragColor);
+		if(isGamma)
+			FragColor = gammaCorrection(FragColor);
 		//过亮的原因：实际上进行了两次gamma矫正
 	}
 	else{
 		//	//2.反色效果：
 	//	FragColor = vec4(vec3(1.0 - texture(screenTexture,TexCoords)), 1.0);
-	//	FragColor = gammaCorrection(FragColor);
+//		if(isGamma)
+	//		FragColor = gammaCorrection(FragColor);
 
 	//	//3.灰度化：均分 或 加权
 	//	//均分-------
 	//	FragColor = texture(screenTexture, TexCoords);
 	//    float average = (FragColor.r + FragColor.g + FragColor.b) / 3.0;
 	//    FragColor = vec4(average, average, average, 1.0);
-	//	FragColor = gammaCorrection(FragColor);
+//		if(isGamma)
+//			FragColor = gammaCorrection(FragColor);
 	//	//加权-------
 	//	FragColor = texture(screenTexture, TexCoords);
 	//    float average = 0.2126 * FragColor.r + 0.7152 * FragColor.g + 0.0722 * FragColor.b;
 	//    FragColor = vec4(average, average, average, 1.0);
-	//	FragColor = gammaCorrection(FragColor);
+//		if(isGamma)
+//			FragColor = gammaCorrection(FragColor);
 
 		//4.核效果
 		vec3 sampleTex[9];
@@ -84,7 +89,8 @@ void main()
 	//		col += sampleTex[i] * kernel_Blurring[i];		//模糊效果 
 		}
 	    FragColor = vec4(col, 1.0);
-		FragColor = gammaCorrection(FragColor);
+		if(isGamma)
+			FragColor = gammaCorrection(FragColor);
 		//补充：使用核效果时边缘像素的采样可能会采到window界面外面的像素，导致产生奇怪的边缘效果
 		//解决：将屏幕纹理的环绕方式都设置为GL_CLAMP_TO_EDGE，从而超出屏幕时重复取值，达到正常的效果
 	}

@@ -46,6 +46,8 @@ bool CoreKeyPressed = false;
 bool CoreMode = false;
 bool torchlightPressed = false;
 bool torchMode = false;
+bool GammaPressed = false;
+bool gamma = false;
 
 int main() {
 	// glfw: initialize and configure
@@ -120,7 +122,7 @@ int main() {
 
 	//物体模型
 	//Model ourModel("../../Models/nanosuit/nanosuit.obj");
-	Model ourModel("../../Models/nanosuit_reflection/nanosuit.obj");
+	Model ourModel("../../Models/nanosuit_reflection/nanosuit.obj", gamma);
 	Shader modelShader("../../Shader/nano_vs.glsl", "../../Shader/nano_fs.glsl");
 	//画法线的shader
 	Shader modelShaderNormal("../../Shader/nano_vs_normal.glsl", "../../Shader/nano_fs_normal.glsl", "../../Shader/nano_gs_normal.glsl");
@@ -129,7 +131,7 @@ int main() {
 	Shader simpleDepthShader("../../Shader/shadow_mapping_depth_vs.glsl", "../../Shader/shadow_mapping_depth_fs.glsl");
 
 	//debugDepthQuad
-	Shader debugDepthQuad("../../Shader/quad_depth_vs.glsl", "../../Shader/quad_depth_fs.glsl");
+	//Shader debugDepthQuad("../../Shader/quad_depth_vs.glsl", "../../Shader/quad_depth_fs.glsl");
 
 	float cubeVertices[] = {
 			// positions          // normals          // texture coords
@@ -384,7 +386,7 @@ int main() {
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
 
-	//skybox VAO
+	//skyboxVAO
 	unsigned int skyboxVAO, skyboxVBO;
 	glGenVertexArrays(1, &skyboxVAO);
 	glGenBuffers(1, &skyboxVBO);
@@ -406,12 +408,13 @@ int main() {
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
 
-	// load textures (we now use a utility function to keep the code more organized)
+
+	// load textures (we now use a utility function to keep the code more organized)	
 	// -----------------------------------------------------------------------------
-	unsigned int cubeTexture = loadTexture("../../Textures/marble.jpg", false);
-	unsigned int floorTexture = loadTexture("../../Textures/metal.png", false);
+	unsigned int cubeTexture = loadTexture("../../Textures/marble.jpg", gamma);
+	unsigned int floorTexture = loadTexture("../../Textures/metal.png", gamma);
 	//unsigned int transparentTexture = loadTexture("../../Textures/grass.png");
-	unsigned int transparentTexture = loadTexture("../../Textures/window.png", false);
+	unsigned int transparentTexture = loadTexture("../../Textures/window.png", gamma);
 
 	//加载天空盒：
 	vector<std::string> faces{
@@ -428,7 +431,7 @@ int main() {
 	// --------------------
 	shader.use();
 	shader.setInt("diffuseTexture", 0);
-	shader.setInt("shadowMap", 1);
+	shader.setInt("shadowMap", 1);			//只考虑地面效果，模型那里没有加上阴影uniform
 
 	transparentShader.use();
 	transparentShader.setInt("texture_diffuse1", 0);
@@ -436,6 +439,7 @@ int main() {
 	screenShader.use();
 	screenShader.setInt("screenTexture", 0);
 	screenShader.setBool("coreMode", CoreMode);
+	screenShader.setBool("isGamma", gamma);
 
 	skyboxShader.use();
 	skyboxShader.setInt("skybox", 0);
@@ -449,68 +453,66 @@ int main() {
 	modelShader.use();
 	modelShader.setInt("skybox", 3);		//默认的纹理单元已经使用了3个（diffuse1, diffuse2, specular1），因此天空盒要设置成第四个modelShader
 
-	debugDepthQuad.use();
-	debugDepthQuad.setInt("depthMap", 0);
+	//debugDepthQuad.use();
+	//debugDepthQuad.setInt("depthMap", 0);
 
-	////修改成多采样来减少锯齿：
-	////framebuffer configuration
-	//unsigned int framebuffer;					//多采样framebuffer
-	//glGenFramebuffers(1, &framebuffer);
-	//glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-	//// create a multisampled color attachment texture
-	//unsigned int textureColorBufferMultiSampled;		//多重采样纹理
-	//glGenTextures(1, &textureColorBufferMultiSampled);
-	//glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, textureColorBufferMultiSampled);		//多重采样
-	//glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGB, SCR_WIDTH, SCR_HEIGHT, GL_TRUE);
-	//glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
-	//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, textureColorBufferMultiSampled, 0);
+	//修改成多采样来减少锯齿：
+	//framebuffer configuration
+	unsigned int framebuffer;					//多采样framebuffer
+	glGenFramebuffers(1, &framebuffer);
+	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+	// create a multisampled color attachment texture
+	unsigned int textureColorBufferMultiSampled;		//多重采样纹理
+	glGenTextures(1, &textureColorBufferMultiSampled);
+	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, textureColorBufferMultiSampled);		//多重采样
+	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGB, SCR_WIDTH, SCR_HEIGHT, GL_TRUE);
+	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, textureColorBufferMultiSampled, 0);
 
-	//// create a (also multisampled) renderbuffer object for depth and stencil attachments
-	//// 不会在其中采样（不会进行处理） —— 使用渲染缓冲对象； 要采样 —— 使用纹理附件
-	//unsigned int rbo;
-	//glGenRenderbuffers(1, &rbo);
-	//glBindRenderbuffer(GL_RENDERBUFFER, rbo);		//绑定渲染缓冲对象，之后对其进行设置
-	////说明rbo为一个深度和模板渲染缓冲对象
-	//glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT);
-	//glBindRenderbuffer(GL_RENDERBUFFER, 0);
-	////附加这个rbo到framebuffer上
-	//glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+	// create a (also multisampled) renderbuffer object for depth and stencil attachments
+	// 不会在其中采样（不会进行处理） —— 使用渲染缓冲对象； 要采样 —— 使用纹理附件
+	unsigned int rbo;
+	glGenRenderbuffers(1, &rbo);
+	glBindRenderbuffer(GL_RENDERBUFFER, rbo);		//绑定渲染缓冲对象，之后对其进行设置
+	//说明rbo为一个深度和模板渲染缓冲对象
+	glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT);
+	glBindRenderbuffer(GL_RENDERBUFFER, 0);
+	//附加这个rbo到framebuffer上
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
 
-	//if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-	//	std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
-	//glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+	///*************   猜测：根据深度和模板rbo来画到颜色纹理中？   ***************
+	//所以中介只需要color buffer，因为图像已经存在framebuffer的color buffer中了*/
 
-	//************   猜测：根据深度和模板rbo来画到颜色纹理中？   ***************
-	//所以中介只需要color buffer，因为图像已经存在framebuffer的color buffer中了
+	//中介frame buffer object
+	unsigned int intermediateFBO;					//中介framebuffer
+	glGenFramebuffers(1, &intermediateFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, intermediateFBO);
+	//创建color attachment texture（颜色纹理附件，还包括深度和模板）,大致操作和纹理一样
+	unsigned int screenTexture;			//中介纹理
+	glGenTextures(1, &screenTexture);
+	glBindTexture(GL_TEXTURE_2D, screenTexture);
+	//** 这边，选择屏幕的长度和宽度，然后数据填NULL，只是分配空间，暂时没有存放颜色数据，之后渲染时会输入进去
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	//这里只有中介的fbo需要下面的设置，因为多采样的缓冲图像不能用于其他计算，如在着色器中进行采样
+	//使用核进行采样时使用 ==================================================
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	//====================================================================
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
+	glBindTexture(GL_TEXTURE_2D, 0);
+	//将颜色附件附到framebuffer上
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, screenTexture, 0);	//只需要一个color buffer
 
-	////中介frame buffer object
-	//unsigned int intermediateFBO;					//中介framebuffer
-	//glGenFramebuffers(1, &intermediateFBO);
-	//glBindFramebuffer(GL_FRAMEBUFFER, intermediateFBO);
-	////创建color attachment texture（颜色纹理附件，还包括深度和模板）,大致操作和纹理一样
-	//unsigned int screenTexture;			//中介纹理
-	//glGenTextures(1, &screenTexture);
-	//glBindTexture(GL_TEXTURE_2D, screenTexture);
-	////** 这边，选择屏幕的长度和宽度，然后数据填NULL，只是分配空间，暂时没有存放颜色数据，之后渲染时会输入进去
-	//glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-	////这里只有中介的fbo需要下面的设置，因为多采样的缓冲图像不能用于其他计算，如在着色器中进行采样
-	////使用核进行采样时使用 ==================================================
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	////====================================================================
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	//glBindTexture(GL_TEXTURE_2D, 0);
-	////将颜色附件附到framebuffer上
-	//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, screenTexture, 0);	//只需要一个color buffer
-
-	////now that we actually created the framebuffer and added all attachments we want to check if it is actually complete now
-	//if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-	//	std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
-	//glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	//now that we actually created the framebuffer and added all attachments we want to check if it is actually complete now
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 
 	//深度贴图帧缓冲
@@ -559,10 +561,6 @@ int main() {
 
 		//渲染指令
 		//----------------------------------------
-
-		// bind to framebuffer and draw scene as we normally would to color texture
-		// 不会画到窗口，而会画到纹理附件上去    (多重纹理版本)
-		//glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 		//*****************  进行重置，本来没写 —— 写上的好处：每次循环重置为初始状态，防止上次循环的影响  ********************
 		//glEnable(GL_DEPTH_TEST);
 		//glEnable(GL_STENCIL_TEST);
@@ -571,7 +569,7 @@ int main() {
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);	//状态设置
 		//每次渲染迭代前清除深度缓冲&颜色缓冲&模板缓冲（否则前一帧的深度信息仍然保存在缓冲中）
 		//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		// ********************* 注意看后面的glStencilMask(0xFF)的作用
 
 		//设置光的转换矩阵（将物体从世界坐标转换到灯源的坐标下）
@@ -638,6 +636,10 @@ int main() {
 
 		//生成完毕，恢复默认帧缓冲，画到屏幕上
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+		// bind to framebuffer and draw scene as we normally would to color texture
+		// 不会画到窗口，而会画到纹理附件上去    (多重纹理版本)
+		//glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 		
 		//glCullFace(GL_BACK);
 		//glDisable(GL_CULL_FACE);
@@ -663,9 +665,9 @@ int main() {
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 
 		// set uniforms
-		shaderSingleColor.use();
-		shaderSingleColor.setMat4("view", view);
-		shaderSingleColor.setMat4("projection", projection);
+		//shaderSingleColor.use();
+		//shaderSingleColor.setMat4("view", view);
+		//shaderSingleColor.setMat4("projection", projection);
 
 		transparentShader.use();
 		transparentShader.setMat4("view", view);
@@ -724,7 +726,6 @@ int main() {
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 		//===============================================================================
-
 
 		shader.use();
 		//shader.setMat4("view", view);
@@ -898,9 +899,9 @@ int main() {
 			glDrawArrays(GL_TRIANGLES, 0, 6);
 		}
 
-		////至此，framebuffer上的已经画完了，画到了framebuffer的color buffer附件上 —— textureColorBufferMultiSampled上
-		////现在blit（位块传输）multisampled buffer(s) to normal colorbuffer of intermediate FBO.
-		////Image is stored in screenTexture
+		//至此，framebuffer上的已经画完了，画到了framebuffer的color buffer附件上 —— textureColorBufferMultiSampled上
+		//现在blit（位块传输）multisampled buffer(s) to normal colorbuffer of intermediate FBO.
+		//Image is stored in screenTexture
 
 		//glBindFramebuffer(GL_READ_FRAMEBUFFER, framebuffer);		//从framebuffer里读
 		//glBindFramebuffer(GL_DRAW_FRAMEBUFFER, intermediateFBO);	//向中介中写
@@ -909,9 +910,8 @@ int main() {
 
 
 		////下面开始画到屏幕的四边形上(默认的frame buffer，即0)
-		////glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		//glBindFramebuffer(GL_READ_FRAMEBUFFER, intermediateFBO);
-		//glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+		//glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		////glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
 		////=======================  存疑：为什么这个注释掉后会有问题？ =========================
 		//glDisable(GL_DEPTH_TEST);	// disable depth test so screen-space quad isn't discarded due to depth test.
@@ -927,11 +927,12 @@ int main() {
 
 		//screenShader.use();
 		//screenShader.setBool("coreMode", CoreMode);
+		//screenShader.setBool("isGamma", gamma);
 		//glBindVertexArray(quadVAO);
 		//glBindTexture(GL_TEXTURE_2D, screenTexture);	// use the color attachment texture as the texture of the quad plane
 		//glDrawArrays(GL_TRIANGLES, 0, 6);
 
-		//glEnable(GL_STENCIL_TEST);
+		////glEnable(GL_STENCIL_TEST);
 
 		//检查并调用事件，交换缓冲
 		//----------------------------------------
@@ -939,19 +940,19 @@ int main() {
 		glfwPollEvents();
 	}
 
-	//glDeleteVertexArrays(1, &cubeVAO);
-	//glDeleteVertexArrays(1, &planeVAO);
-	//glDeleteVertexArrays(1, &transparentVAO);
-	//glDeleteVertexArrays(1, &quadVAO);
-	//glDeleteVertexArrays(1, &skyboxVAO);
-	//glDeleteBuffers(1, &cubeVBO);
-	//glDeleteBuffers(1, &planeVBO);
-	//glDeleteBuffers(1, &transparentVBO);
-	//glDeleteBuffers(1, &quadVBO);
-	//glDeleteBuffers(1, &skyboxVBO);
-	//glDeleteRenderbuffers(1, &rbo);
-	//glDeleteFramebuffers(1, &framebuffer);
-	//glDeleteFramebuffers(1, &intermediateFBO);
+	/*glDeleteVertexArrays(1, &cubeVAO);
+	glDeleteVertexArrays(1, &planeVAO);
+	glDeleteVertexArrays(1, &transparentVAO);
+	glDeleteVertexArrays(1, &quadVAO);
+	glDeleteVertexArrays(1, &skyboxVAO);
+	glDeleteBuffers(1, &cubeVBO);
+	glDeleteBuffers(1, &planeVBO);
+	glDeleteBuffers(1, &transparentVBO);
+	glDeleteBuffers(1, &quadVBO);
+	glDeleteBuffers(1, &skyboxVBO);
+	glDeleteRenderbuffers(1, &rbo);
+	glDeleteFramebuffers(1, &framebuffer);
+	glDeleteFramebuffers(1, &intermediateFBO);*/
 
 	// glfw: terminate, clearing all previously allocated GLFW resources.
 	//-----------------------------------------------------------
@@ -1042,6 +1043,16 @@ void processInput(GLFWwindow *window) {
 	if (glfwGetKey(window, GLFW_KEY_G) == GLFW_RELEASE)
 	{
 		torchlightPressed = false;
+	}
+
+	//开关gamma矫正
+	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS && !GammaPressed) {
+		gamma = !gamma;
+		GammaPressed = true;
+	}
+	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_RELEASE)
+	{
+		GammaPressed = false;
 	}
 }
 
