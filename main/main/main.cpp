@@ -48,6 +48,9 @@ bool torchlightPressed = false;
 bool torchMode = false;
 bool GammaPressed = false;
 bool gamma = false;
+bool shadows = true;
+bool shadowsKeyPressed = false;
+
 
 int main() {
 	// glfw: initialize and configure
@@ -128,7 +131,7 @@ int main() {
 	Shader modelShaderNormal("../../Shader/nano_vs_normal.glsl", "../../Shader/nano_fs_normal.glsl", "../../Shader/nano_gs_normal.glsl");
 
 	//阴影shader
-	Shader simpleDepthShader("../../Shader/shadow_mapping_depth_vs.glsl", "../../Shader/shadow_mapping_depth_fs.glsl");
+	Shader simpleDepthShader("../../Shader/shadow_mapping_depth_vs.glsl", "../../Shader/shadow_mapping_depth_fs.glsl", "../../Shader/shadow_mapping_depth_gs.glsl");
 
 	//debugDepthQuad
 	//Shader debugDepthQuad("../../Shader/quad_depth_vs.glsl", "../../Shader/quad_depth_fs.glsl");
@@ -456,91 +459,92 @@ int main() {
 	//debugDepthQuad.use();
 	//debugDepthQuad.setInt("depthMap", 0);
 
-	//修改成多采样来减少锯齿：
-	//framebuffer configuration
-	unsigned int framebuffer;					//多采样framebuffer
-	glGenFramebuffers(1, &framebuffer);
-	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-	// create a multisampled color attachment texture
-	unsigned int textureColorBufferMultiSampled;		//多重采样纹理
-	glGenTextures(1, &textureColorBufferMultiSampled);
-	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, textureColorBufferMultiSampled);		//多重采样
-	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGB, SCR_WIDTH, SCR_HEIGHT, GL_TRUE);
-	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, textureColorBufferMultiSampled, 0);
+	////修改成多采样来减少锯齿：
+	////framebuffer configuration
+	//unsigned int framebuffer;					//多采样framebuffer
+	//glGenFramebuffers(1, &framebuffer);
+	//glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+	//// create a multisampled color attachment texture
+	//unsigned int textureColorBufferMultiSampled;		//多重采样纹理
+	//glGenTextures(1, &textureColorBufferMultiSampled);
+	//glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, textureColorBufferMultiSampled);		//多重采样
+	//glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGB, SCR_WIDTH, SCR_HEIGHT, GL_TRUE);
+	//glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+	//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, textureColorBufferMultiSampled, 0);
 
-	// create a (also multisampled) renderbuffer object for depth and stencil attachments
-	// 不会在其中采样（不会进行处理） —— 使用渲染缓冲对象； 要采样 —— 使用纹理附件
-	unsigned int rbo;
-	glGenRenderbuffers(1, &rbo);
-	glBindRenderbuffer(GL_RENDERBUFFER, rbo);		//绑定渲染缓冲对象，之后对其进行设置
-	//说明rbo为一个深度和模板渲染缓冲对象
-	glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT);
-	glBindRenderbuffer(GL_RENDERBUFFER, 0);
-	//附加这个rbo到framebuffer上
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+	//// create a (also multisampled) renderbuffer object for depth and stencil attachments
+	//// 不会在其中采样（不会进行处理） —— 使用渲染缓冲对象； 要采样 —— 使用纹理附件
+	//unsigned int rbo;
+	//glGenRenderbuffers(1, &rbo);
+	//glBindRenderbuffer(GL_RENDERBUFFER, rbo);		//绑定渲染缓冲对象，之后对其进行设置
+	////说明rbo为一个深度和模板渲染缓冲对象
+	//glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT);
+	//glBindRenderbuffer(GL_RENDERBUFFER, 0);
+	////附加这个rbo到framebuffer上
+	//glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
 
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	//if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	//	std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
+	//glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-	///*************   猜测：根据深度和模板rbo来画到颜色纹理中？   ***************
-	//所以中介只需要color buffer，因为图像已经存在framebuffer的color buffer中了*/
+	/////*************   猜测：根据深度和模板rbo来画到颜色纹理中？   ***************
+	////所以中介只需要color buffer，因为图像已经存在framebuffer的color buffer中了*/
 
-	//中介frame buffer object
-	unsigned int intermediateFBO;					//中介framebuffer
-	glGenFramebuffers(1, &intermediateFBO);
-	glBindFramebuffer(GL_FRAMEBUFFER, intermediateFBO);
-	//创建color attachment texture（颜色纹理附件，还包括深度和模板）,大致操作和纹理一样
-	unsigned int screenTexture;			//中介纹理
-	glGenTextures(1, &screenTexture);
-	glBindTexture(GL_TEXTURE_2D, screenTexture);
-	//** 这边，选择屏幕的长度和宽度，然后数据填NULL，只是分配空间，暂时没有存放颜色数据，之后渲染时会输入进去
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-	//这里只有中介的fbo需要下面的设置，因为多采样的缓冲图像不能用于其他计算，如在着色器中进行采样
-	//使用核进行采样时使用 ==================================================
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	//====================================================================
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	////中介frame buffer object
+	//unsigned int intermediateFBO;					//中介framebuffer
+	//glGenFramebuffers(1, &intermediateFBO);
+	//glBindFramebuffer(GL_FRAMEBUFFER, intermediateFBO);
+	////创建color attachment texture（颜色纹理附件，还包括深度和模板）,大致操作和纹理一样
+	//unsigned int screenTexture;			//中介纹理
+	//glGenTextures(1, &screenTexture);
+	//glBindTexture(GL_TEXTURE_2D, screenTexture);
+	////** 这边，选择屏幕的长度和宽度，然后数据填NULL，只是分配空间，暂时没有存放颜色数据，之后渲染时会输入进去
+	//glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	////这里只有中介的fbo需要下面的设置，因为多采样的缓冲图像不能用于其他计算，如在着色器中进行采样
+	////使用核进行采样时使用 ==================================================
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	////====================================================================
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	glBindTexture(GL_TEXTURE_2D, 0);
-	//将颜色附件附到framebuffer上
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, screenTexture, 0);	//只需要一个color buffer
+	//glBindTexture(GL_TEXTURE_2D, 0);
+	////将颜色附件附到framebuffer上
+	//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, screenTexture, 0);	//只需要一个color buffer
 
-	//now that we actually created the framebuffer and added all attachments we want to check if it is actually complete now
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	////now that we actually created the framebuffer and added all attachments we want to check if it is actually complete now
+	//if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	//	std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
+	//glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 
-	//深度贴图帧缓冲
+	//深度立方贴图帧缓冲
 	GLuint depthMapFBO;			//GLuint就是unsigned int的别名
 	glGenFramebuffers(1, &depthMapFBO);
 
-	//创建2D纹理，供帧缓冲的深度缓冲使用    1024:深度贴图的分辨率
+	//创建立方体纹理，供点光源帧缓冲的深度缓冲使用    1024:深度贴图的分辨率
 	const GLuint SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
-	GLuint depthMap;
-	glGenTextures(1, &depthMap);
-	glBindTexture(GL_TEXTURE_2D, depthMap);
-	//只关心深度值，因此将纹理格式指定为GL_DEPTH_COMPONENT
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	GLfloat borderColor[] = { 1.0, 1.0, 1.0, 1.0 };		//外围返回1.0的深度值(其他深度肯定比他小)
-	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-	//↑ 这样设置时在范围外的区域，纹理函数总会返回1.0的深度值，从而阴影值为0.0（而不是GL_REPEAT）
+	GLuint depthCubeMap;
+	glGenTextures(1, &depthCubeMap);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubeMap);
+	//按顺序绑定每个面
+	for (GLuint i = 0; i < 6; ++i)
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
-	//绑定为深度缓冲
+	// Attach cubemap as depth map FBO's color buffer
 	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
-	//只需要深度信息，不需要颜色缓冲，但是帧缓冲对象必须要有颜色缓冲，因此显式声明不使用颜色数据进行渲染
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthCubeMap, 0);
 	glDrawBuffer(GL_NONE);
 	glReadBuffer(GL_NONE);
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		std::cout << "Framebuffer not complete!" << std::endl;
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 
 
 	//是否使用线框模式
@@ -572,16 +576,18 @@ int main() {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		// ********************* 注意看后面的glStencilMask(0xFF)的作用
 
-		//设置光的转换矩阵（将物体从世界坐标转换到灯源的坐标下）
-		glm::mat4 lightProjection, lightView;
-		glm::mat4 lightSpaceMatrix;
-		float near_plane = 0.0f, far_plane = 15.5f;
-		lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
-		lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
-		lightSpaceMatrix = lightProjection * lightView;
-		// render scene from light's point of view
-		simpleDepthShader.use();
-		simpleDepthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+		//设置光的转换矩阵数组 —— 对应6个面（将物体从世界坐标转换到灯源的坐标下）
+		GLfloat aspect = (GLfloat)SHADOW_WIDTH / (GLfloat)SHADOW_HEIGHT;
+		GLfloat near_plane = 1.0f;
+		GLfloat far_plane = 25.0f;
+		glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), aspect, near_plane, far_plane);
+		std::vector<glm::mat4> shadowTransforms;
+		shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0)));
+		shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(-1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0)));
+		shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0, 1.0, 0.0), glm::vec3(0.0, 0.0, 1.0)));
+		shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0, -1.0, 0.0), glm::vec3(0.0, 0.0, -1.0)));
+		shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, -1.0, 0.0)));
+		shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0, 0.0, -1.0), glm::vec3(0.0, -1.0, 0.0)));
 
 
 		//设置视口  适应阴影贴图分辨率, 开始生成阴影贴图
@@ -598,7 +604,11 @@ int main() {
 
 		//生成阴影贴图
 		simpleDepthShader.use();		//对所有要进行阴影设置的物体使用这个shader
-		
+		for (unsigned int i = 0; i < 6; ++i)
+			simpleDepthShader.setMat4("shadowMatrices[" + std::to_string(i) + "]", shadowTransforms[i]);
+		simpleDepthShader.setFloat("far_plane", far_plane);
+		simpleDepthShader.setVec3("lightPos", lightPos);
+
 		//优化：不使用bias，但是不渲染地面（不会产生阴影的地方不渲染阴影贴图）
 		//见知乎答案：王永宝   https://www.zhihu.com/question/321779117
 
@@ -732,8 +742,9 @@ int main() {
 		//shader.setMat4("projection", projection);
 		//一定记得要加 ！！！
 		shader.setVec3("viewPos", camera.Position);
-		shader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
 		shader.setBool("torchMode", torchMode);
+		shader.setInt("shadows", shadows); // enable/disable shadows by pressing 'SPACE'
+		shader.setFloat("far_plane", far_plane);
 
 		//先画所有不透明的物体
 		//1.开始时绘制地板 —— 不需要边框，因此设置不经过模板缓冲
@@ -743,7 +754,7 @@ int main() {
 		glActiveTexture(GL_TEXTURE0);		//这里可以没有（默认激活0）
 		glBindTexture(GL_TEXTURE_2D, floorTexture);
 		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, depthMap);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubeMap);
 		shader.setMat4("model", glm::mat4(1.0f));
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		glBindVertexArray(0);
@@ -757,7 +768,7 @@ int main() {
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, cubeTexture);
 		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, depthMap);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubeMap);		
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(-1.0f, -0.5f, -1.0f));
 		model = glm::scale(model, glm::vec3(0.5f));
@@ -932,7 +943,7 @@ int main() {
 		//glBindTexture(GL_TEXTURE_2D, screenTexture);	// use the color attachment texture as the texture of the quad plane
 		//glDrawArrays(GL_TRIANGLES, 0, 6);
 
-		////glEnable(GL_STENCIL_TEST);
+		//glEnable(GL_STENCIL_TEST);
 
 		//检查并调用事件，交换缓冲
 		//----------------------------------------
@@ -1053,6 +1064,17 @@ void processInput(GLFWwindow *window) {
 	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_RELEASE)
 	{
 		GammaPressed = false;
+	}
+
+	//阴影开关
+	if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS && !shadowsKeyPressed)
+	{
+		shadows = !shadows;
+		shadowsKeyPressed = true;
+	}
+	if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_RELEASE)
+	{
+		shadowsKeyPressed = false;
 	}
 }
 

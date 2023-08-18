@@ -139,5 +139,8 @@
     <None Include="..\..\Shader\quad_depth_vs.glsl">
       <Filter>资源文件</Filter>
     </None>
+    <None Include="..\..\Shader\shadow_mapping_depth_gs.glsl">
+      <Filter>资源文件</Filter>
+    </None>
   </ItemGroup>
 </Project>

@@ -181,6 +181,7 @@
     <None Include="..\..\Shader\rock_fs.glsl" />
     <None Include="..\..\Shader\rock_vs.glsl" />
     <None Include="..\..\Shader\shadow_mapping_depth_fs.glsl" />
+    <None Include="..\..\Shader\shadow_mapping_depth_gs.glsl" />
     <None Include="..\..\Shader\shadow_mapping_depth_vs.glsl" />
     <None Include="..\..\Shader\skybox_fs.glsl" />
     <None Include="..\..\Shader\skybox_vs.glsl" />
