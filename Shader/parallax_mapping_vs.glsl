@@ -26,10 +26,9 @@ void main()
     vs_out.FragPos = vec3(model * vec4(position, 1.0));   
     vs_out.TexCoords = texCoords;
     
-    mat3 normalMatrix = transpose(inverse(mat3(model)));
-    vec3 T = normalize(normalMatrix * tangent);
-    vec3 B = normalize(normalMatrix * bitangent);
-    vec3 N = normalize(normalMatrix * normal);    
+    vec3 T = normalize(mat3(model) * tangent);
+    vec3 B = normalize(mat3(model) * bitangent);
+    vec3 N = normalize(mat3(model) * normal);    
     
 	//将传入片段着色器的TBN矩阵进行逆置，从而将传入的其他世界坐标下向量可以转变为切线空间下向量
 	//这么做的原因：顶点着色器中处理的速度更快，其他具体见learn openGL上的解释
