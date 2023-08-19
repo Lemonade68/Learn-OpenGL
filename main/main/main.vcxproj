@@ -172,6 +172,8 @@
     <None Include="..\..\Shader\nano_gs_normal.glsl" />
     <None Include="..\..\Shader\nano_vs.glsl" />
     <None Include="..\..\Shader\nano_vs_normal.glsl" />
+    <None Include="..\..\Shader\normal_mapping_fs.glsl" />
+    <None Include="..\..\Shader\normal_mapping_vs.glsl" />
     <None Include="..\..\Shader\quad_depth_fs.glsl" />
     <None Include="..\..\Shader\quad_depth_vs.glsl" />
     <None Include="..\..\Shader\reflectbox_fs.glsl" />

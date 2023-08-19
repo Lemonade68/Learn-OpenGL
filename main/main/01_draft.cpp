@@ -25,8 +25,8 @@
 //void loadShaderLightPara(Shader &shader, glm::vec3 pointLightPositions[]);
 //
 ////settings
-//const unsigned int SCR_WIDTH = 800;
-//const unsigned int SCR_HEIGHT = 600;
+//const unsigned int SCR_WIDTH = 1280;
+//const unsigned int SCR_HEIGHT = 1024;
 //
 ////创建摄像机(实际上是物体在运动，通过loolAt矩阵来让物体反着运动造成摄像机移动的假象)
 //Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
@@ -44,6 +44,13 @@
 //
 //bool CoreKeyPressed = false;
 //bool CoreMode = false;
+//bool torchlightPressed = false;
+//bool torchMode = false;
+//bool GammaPressed = false;
+//bool gamma = false;
+//bool shadows = true;
+//bool shadowsKeyPressed = false;
+//
 //
 //int main() {
 //	// glfw: initialize and configure
@@ -87,55 +94,10 @@
 //
 //	//configure global opengl state
 //	//-----------------------------------------------------------
-//	//1.模板测试（先进行）
-//	glEnable(GL_STENCIL_TEST);
-//	//设置掩码
-//	//glStencilMask(0xFF);		// 启用写入，每一位写入模板缓冲时都保持原样（原理：与1位与，默认也是1)
-//	//glStencilMask(0x00);		// 每一位在写入模板缓冲时都会变成0（禁用写入）
-//	//应该对缓冲内容做什么：glStencilFunc
-//	glStencilFunc(GL_NOTEQUAL, 1, 0xFF);		//只有片段的模板值为0时才能通过测试并被绘制
-//
-//	//=============================================
-//	//体会这两种的差别：
-//	//glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);		//被地板遮住时会绘制全绿
-//	glStencilOp(GL_KEEP, GL_REPLACE, GL_REPLACE);		//被地板遮住时只绘制边框
-//
-//	//原理：被地板遮住的物体通不过深度测试，因此会执行第二个参数的要求，接着就好明白了
-//	//=============================================
-//
-//
-//	//2.深度测试（后进行）
 //	glEnable(GL_DEPTH_TEST);				//设置启用深度测试
-//	//glDepthMask(GL_FALSE);				//是否禁用深度缓冲的写入，开启后使用才有效
-//	//glDepthFunc(GL_ALWAYS); // always pass the depth test (same effect as glDisable(GL_DEPTH_TEST))
-//	glDepthFunc(GL_LESS); // 与正常相同（更小才会通过测试而被绘制，更远的片段会被丢弃）
-//
-//	//  **********  深度缓冲中的值在屏幕空间中不是线性的!!!!!!!!!!!!!!!!!
-//	// 事实上，近处的物体深度精度大，远处的物体深度精度很小
-//	// 实际上就是projection model里面games101讲到的问题，远处的空间会被挤压的更小
-//
-//
-//	//3.混合（最后进行）
-//	//效果：使得每当OpenGL渲染了一个片段时，它都会将当前片段的颜色和当前颜色缓冲中的片段颜色根据alpha值来进行混合
+//	//glEnable(GL_STENCIL_TEST);
 //	glEnable(GL_BLEND);
 //	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);		//设置因子
-//	//问题：深度测试时不会考虑透明的问题，因此需要考虑前后距离的问题来解决半透明物体不显示后方物体的问题
-//
-//
-//	//面剔除 —— 定义三角形时全部按照逆时针的方向来定义，这样可以很好的完成面剔除工作
-//	glEnable(GL_CULL_FACE);			//背向面将会被丢弃（针对封闭形状）
-//	//如果要画草这种的话：关闭面剔除，因为正反面都应该可见
-//	glCullFace(GL_BACK);	//只剔除逆向面（默认是BACK，顺向面：FRNOT）
-//	glFrontFace(GL_CCW);	//定义逆时针的面为正向面，CW是顺时针
-//
-//	glDisable(GL_CULL_FACE);
-//
-//	//使用点元(GL_POINTS)进行绘制时，可以通过开启这个来实现点的大小的改变（对gl_PointSize内建变量的控制）
-//	//见reflectbox的vs的改动
-//	//glEnable(GL_PROGRAM_POINT_SIZE);
-//
-//	//启用多重采样，防走样（抗锯齿）
-//	glEnable(GL_MULTISAMPLE);			//对于使用了帧缓冲的没有用，仅对于直接渲染在屏幕上的有用
 //
 //	//bulid shader program
 //	//-----------------------------------------------------------
@@ -163,60 +125,61 @@
 //
 //	//物体模型
 //	//Model ourModel("../../Models/nanosuit/nanosuit.obj");
-//	Model ourModel("../../Models/nanosuit_reflection/nanosuit.obj");
+//	Model ourModel("../../Models/nanosuit_reflection/nanosuit.obj", gamma);
 //	Shader modelShader("../../Shader/nano_vs.glsl", "../../Shader/nano_fs.glsl");
 //	//画法线的shader
 //	Shader modelShaderNormal("../../Shader/nano_vs_normal.glsl", "../../Shader/nano_fs_normal.glsl", "../../Shader/nano_gs_normal.glsl");
 //
 //	//阴影shader
-//	Shader simpleDepthShader("../../Shader/shadow_mapping_depth_vs.glsl", "../../Shader/shadow_mapping_depth_fs.glsl");
+//	Shader simpleDepthShader("../../Shader/shadow_mapping_depth_vs.glsl", "../../Shader/shadow_mapping_depth_fs.glsl", "../../Shader/shadow_mapping_depth_gs.glsl");
 //
 //	//debugDepthQuad
-//	Shader debugDepthQuad("../../Shader/quad_depth_vs.glsl", "../../Shader/quad_depth_fs.glsl");
+//	//Shader debugDepthQuad("../../Shader/quad_depth_vs.glsl", "../../Shader/quad_depth_fs.glsl");
 //
 //	float cubeVertices[] = {
-//		// positions          // normals           // texture coords
-//		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
-//		 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  0.0f,
-//		 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
-//		 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
-//		-0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  1.0f,
-//		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
-//
-//		-0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
-//		 0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  0.0f,
-//		 0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
-//		 0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
-//		-0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  1.0f,
-//		-0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
-//
-//		-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
-//		-0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
-//		-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
-//		-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
-//		-0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
-//		-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
-//
-//		 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
-//		 0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
-//		 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
-//		 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
-//		 0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
-//		 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
-//
-//		-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
-//		 0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  1.0f,
-//		 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
-//		 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
-//		-0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  0.0f,
-//		-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
-//
-//		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,
-//		 0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  1.0f,
-//		 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
-//		 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
-//		-0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  0.0f,
-//		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f
+//		// positions          // normals          // texture coords
+//		// back face
+//		-1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f, // bottom-left
+//		 1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f, // top-right
+//		 1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 0.0f, // bottom-right         
+//		 1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f, // top-right
+//		-1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f, // bottom-left
+//		-1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 1.0f, // top-left
+//		// front face
+//		-1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f, // bottom-left
+//		 1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 0.0f, // bottom-right
+//		 1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f, // top-right
+//		 1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f, // top-right
+//		-1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 1.0f, // top-left
+//		-1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f, // bottom-left
+//		// left face
+//		-1.0f,  1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-right
+//		-1.0f,  1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 1.0f, // top-left
+//		-1.0f, -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-left
+//		-1.0f, -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-left
+//		-1.0f, -1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 0.0f, // bottom-right
+//		-1.0f,  1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-right
+//		// right face
+//		 1.0f,  1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-left
+//		 1.0f, -1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-right
+//		 1.0f,  1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 1.0f, // top-right         
+//		 1.0f, -1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-right
+//		 1.0f,  1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-left
+//		 1.0f, -1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 0.0f, // bottom-left     
+//		// bottom face
+//		-1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f, // top-right
+//		 1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 1.0f, // top-left
+//		 1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f, // bottom-left
+//		 1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f, // bottom-left
+//		-1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 0.0f, // bottom-right
+//		-1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f, // top-right
+//		// top face
+//		-1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f, // top-left
+//		 1.0f,  1.0f , 1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 0.0f, // bottom-right
+//		 1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 1.0f, // top-right     
+//		 1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 0.0f, // bottom-right
+//		-1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f, // top-left
+//		-1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 0.0f  // bottom-left            
 //	};
 //
 //	float planeVertices[] = {
@@ -352,10 +315,14 @@
 //	windows.push_back(glm::vec3(0.5f, 0.0f, -0.6f));
 //
 //	glm::vec3 pointLightPositions[] = {
-//		glm::vec3(0.7f,  0.2f,  2.0f),
+//		/*glm::vec3(0.7f,  0.2f,  2.0f),
 //		glm::vec3(-2.3f, 0.1f, -1.0f),
 //		glm::vec3(0.0f,  2.0f, -2.0f),
-//		glm::vec3(-3.0f,  1.0f,  3.0f)
+//		glm::vec3(-3.0f,  1.0f,  3.0f)*/
+//		glm::vec3(0.7f,  0.2f,  10.0f),
+//		glm::vec3(-2.3f, 0.1f, 10.0f),
+//		glm::vec3(0.0f,  2.0f, 0.0f),
+//		glm::vec3(-3.0f,  1.0f,  10.0f)
 //	};
 //
 //	// cube VAO
@@ -422,7 +389,7 @@
 //	glEnableVertexAttribArray(1);
 //	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
 //
-//	//skybox VAO
+//	//skyboxVAO
 //	unsigned int skyboxVAO, skyboxVBO;
 //	glGenVertexArrays(1, &skyboxVAO);
 //	glGenBuffers(1, &skyboxVBO);
@@ -444,12 +411,13 @@
 //	glEnableVertexAttribArray(1);
 //	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
 //
-//	// load textures (we now use a utility function to keep the code more organized)
+//
+//	// load textures (we now use a utility function to keep the code more organized)	
 //	// -----------------------------------------------------------------------------
-//	unsigned int cubeTexture = loadTexture("../../Textures/marble.jpg", true);
-//	unsigned int floorTexture = loadTexture("../../Textures/metal.png", true);
+//	unsigned int cubeTexture = loadTexture("../../Textures/marble.jpg", gamma);
+//	unsigned int floorTexture = loadTexture("../../Textures/metal.png", gamma);
 //	//unsigned int transparentTexture = loadTexture("../../Textures/grass.png");
-//	unsigned int transparentTexture = loadTexture("../../Textures/window.png", true);
+//	unsigned int transparentTexture = loadTexture("../../Textures/window.png", gamma);
 //
 //	//加载天空盒：
 //	vector<std::string> faces{
@@ -465,7 +433,8 @@
 //	// shader configuration
 //	// --------------------
 //	shader.use();
-//	shader.setInt("texture1", 0);
+//	shader.setInt("diffuseTexture", 0);
+//	shader.setInt("shadowMap", 1);			//只考虑地面效果，模型那里没有加上阴影uniform
 //
 //	transparentShader.use();
 //	transparentShader.setInt("texture_diffuse1", 0);
@@ -473,6 +442,7 @@
 //	screenShader.use();
 //	screenShader.setInt("screenTexture", 0);
 //	screenShader.setBool("coreMode", CoreMode);
+//	screenShader.setBool("isGamma", gamma);
 //
 //	skyboxShader.use();
 //	skyboxShader.setInt("skybox", 0);
@@ -486,93 +456,95 @@
 //	modelShader.use();
 //	modelShader.setInt("skybox", 3);		//默认的纹理单元已经使用了3个（diffuse1, diffuse2, specular1），因此天空盒要设置成第四个modelShader
 //
-//	debugDepthQuad.use();
-//	debugDepthQuad.setInt("depthMap", 0);
+//	//debugDepthQuad.use();
+//	//debugDepthQuad.setInt("depthMap", 0);
 //
-//	//修改成多采样来减少锯齿：
-//	//framebuffer configuration
-//	unsigned int framebuffer;					//多采样framebuffer
-//	glGenFramebuffers(1, &framebuffer);
-//	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-//	// create a multisampled color attachment texture
-//	unsigned int textureColorBufferMultiSampled;		//多重采样纹理
-//	glGenTextures(1, &textureColorBufferMultiSampled);
-//	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, textureColorBufferMultiSampled);		//多重采样
-//	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGB, SCR_WIDTH, SCR_HEIGHT, GL_TRUE);
-//	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
-//	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, textureColorBufferMultiSampled, 0);
+//	////修改成多采样来减少锯齿：
+//	////framebuffer configuration
+//	//unsigned int framebuffer;					//多采样framebuffer
+//	//glGenFramebuffers(1, &framebuffer);
+//	//glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+//	//// create a multisampled color attachment texture
+//	//unsigned int textureColorBufferMultiSampled;		//多重采样纹理
+//	//glGenTextures(1, &textureColorBufferMultiSampled);
+//	//glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, textureColorBufferMultiSampled);		//多重采样
+//	//glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGB, SCR_WIDTH, SCR_HEIGHT, GL_TRUE);
+//	//glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+//	//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, textureColorBufferMultiSampled, 0);
 //
-//	// create a (also multisampled) renderbuffer object for depth and stencil attachments
-//	// 不会在其中采样（不会进行处理） —— 使用渲染缓冲对象； 要采样 —— 使用纹理附件
-//	unsigned int rbo;
-//	glGenRenderbuffers(1, &rbo);
-//	glBindRenderbuffer(GL_RENDERBUFFER, rbo);		//绑定渲染缓冲对象，之后对其进行设置
-//	//说明rbo为一个深度和模板渲染缓冲对象
-//	glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT);
-//	glBindRenderbuffer(GL_RENDERBUFFER, 0);
-//	//附加这个rbo到framebuffer上
-//	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+//	//// create a (also multisampled) renderbuffer object for depth and stencil attachments
+//	//// 不会在其中采样（不会进行处理） —— 使用渲染缓冲对象； 要采样 —— 使用纹理附件
+//	//unsigned int rbo;
+//	//glGenRenderbuffers(1, &rbo);
+//	//glBindRenderbuffer(GL_RENDERBUFFER, rbo);		//绑定渲染缓冲对象，之后对其进行设置
+//	////说明rbo为一个深度和模板渲染缓冲对象
+//	//glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT);
+//	//glBindRenderbuffer(GL_RENDERBUFFER, 0);
+//	////附加这个rbo到framebuffer上
+//	//glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
 //
-//	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-//		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
-//	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+//	//if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+//	//	std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
+//	//glBindFramebuffer(GL_FRAMEBUFFER, 0);
 //
+//	/////*************   猜测：根据深度和模板rbo来画到颜色纹理中？   ***************
+//	////所以中介只需要color buffer，因为图像已经存在framebuffer的color buffer中了*/
 //
-//	//************   猜测：根据深度和模板rbo来画到颜色纹理中？   ***************
-//	//所以中介只需要color buffer，因为图像已经存在framebuffer的color buffer中了
+//	////中介frame buffer object
+//	//unsigned int intermediateFBO;					//中介framebuffer
+//	//glGenFramebuffers(1, &intermediateFBO);
+//	//glBindFramebuffer(GL_FRAMEBUFFER, intermediateFBO);
+//	////创建color attachment texture（颜色纹理附件，还包括深度和模板）,大致操作和纹理一样
+//	//unsigned int screenTexture;			//中介纹理
+//	//glGenTextures(1, &screenTexture);
+//	//glBindTexture(GL_TEXTURE_2D, screenTexture);
+//	////** 这边，选择屏幕的长度和宽度，然后数据填NULL，只是分配空间，暂时没有存放颜色数据，之后渲染时会输入进去
+//	//glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+//	////这里只有中介的fbo需要下面的设置，因为多采样的缓冲图像不能用于其他计算，如在着色器中进行采样
+//	////使用核进行采样时使用 ==================================================
+//	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+//	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+//	////====================================================================
+//	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+//	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 //
+//	//glBindTexture(GL_TEXTURE_2D, 0);
+//	////将颜色附件附到framebuffer上
+//	//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, screenTexture, 0);	//只需要一个color buffer
 //
-//	//中介frame buffer object
-//	unsigned int intermediateFBO;					//中介framebuffer
-//	glGenFramebuffers(1, &intermediateFBO);
-//	glBindFramebuffer(GL_FRAMEBUFFER, intermediateFBO);
-//	//创建color attachment texture（颜色纹理附件，还包括深度和模板）,大致操作和纹理一样
-//	unsigned int screenTexture;			//中介纹理
-//	glGenTextures(1, &screenTexture);
-//	glBindTexture(GL_TEXTURE_2D, screenTexture);
-//	//** 这边，选择屏幕的长度和宽度，然后数据填NULL，只是分配空间，暂时没有存放颜色数据，之后渲染时会输入进去
-//	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-//	//这里只有中介的fbo需要下面的设置，因为多采样的缓冲图像不能用于其他计算，如在着色器中进行采样
-//	//使用核进行采样时使用 ==================================================
-//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-//	//====================================================================
-//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-//
-//	glBindTexture(GL_TEXTURE_2D, 0);
-//	//将颜色附件附到framebuffer上
-//	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, screenTexture, 0);	//只需要一个color buffer
-//
-//	//now that we actually created the framebuffer and added all attachments we want to check if it is actually complete now
-//	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-//		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
-//	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+//	////now that we actually created the framebuffer and added all attachments we want to check if it is actually complete now
+//	//if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+//	//	std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
+//	//glBindFramebuffer(GL_FRAMEBUFFER, 0);
 //
 //
-//	//深度贴图
+//	//深度立方贴图帧缓冲
 //	GLuint depthMapFBO;			//GLuint就是unsigned int的别名
 //	glGenFramebuffers(1, &depthMapFBO);
 //
-//	//创建2D纹理，供帧缓冲的深度缓冲使用    1024:深度贴图的分辨率
+//	//创建立方体纹理，供点光源帧缓冲的深度缓冲使用    1024:深度贴图的分辨率
 //	const GLuint SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
-//	GLuint depthMap;
-//	glGenTextures(1, &depthMap);
-//	glBindTexture(GL_TEXTURE_2D, depthMap);
-//	//只关心深度值，因此将纹理格式指定为GL_DEPTH_COMPONENT
-//	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+//	GLuint depthCubeMap;
+//	glGenTextures(1, &depthCubeMap);
+//	glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubeMap);
+//	//按顺序绑定每个面
+//	for (GLuint i = 0; i < 6; ++i)
+//		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+//	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+//	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+//	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+//	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+//	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 //
-//	//绑定为深度缓冲
+//	// Attach cubemap as depth map FBO's color buffer
 //	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-//	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
-//	//只需要深度信息，不需要颜色缓冲，但是帧缓冲对象必须要有颜色缓冲，因此显式声明不使用颜色数据进行渲染
+//	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthCubeMap, 0);
 //	glDrawBuffer(GL_NONE);
 //	glReadBuffer(GL_NONE);
+//	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+//		std::cout << "Framebuffer not complete!" << std::endl;
 //	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+//
 //
 //
 //	//是否使用线框模式
@@ -593,41 +565,119 @@
 //
 //		//渲染指令
 //		//----------------------------------------
-//
-//		// bind to framebuffer and draw scene as we normally would to color texture
-//		// 不会画到窗口，而会画到纹理附件上去    (多重纹理版本)
-//		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 //		//*****************  进行重置，本来没写 —— 写上的好处：每次循环重置为初始状态，防止上次循环的影响  ********************
-//		glEnable(GL_DEPTH_TEST);
-//		glEnable(GL_STENCIL_TEST);
+//		//glEnable(GL_DEPTH_TEST);
+//		//glEnable(GL_STENCIL_TEST);
+//
 //
 //		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);	//状态设置
 //		//每次渲染迭代前清除深度缓冲&颜色缓冲&模板缓冲（否则前一帧的深度信息仍然保存在缓冲中）
 //		//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-//		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+//		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 //		// ********************* 注意看后面的glStencilMask(0xFF)的作用
 //
+//		//设置光的转换矩阵数组 —— 对应6个面（将物体从世界坐标转换到灯源的坐标下）
+//		GLfloat aspect = (GLfloat)SHADOW_WIDTH / (GLfloat)SHADOW_HEIGHT;
+//		GLfloat near_plane = 1.0f;
+//		GLfloat far_plane = 25.0f;
+//		glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), aspect, near_plane, far_plane);
+//		std::vector<glm::mat4> shadowTransforms;
+//		shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0)));
+//		shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(-1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0)));
+//		shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0, 1.0, 0.0), glm::vec3(0.0, 0.0, 1.0)));
+//		shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0, -1.0, 0.0), glm::vec3(0.0, 0.0, -1.0)));
+//		shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, -1.0, 0.0)));
+//		shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0, 0.0, -1.0), glm::vec3(0.0, -1.0, 0.0)));
+//
+//
+//		//设置视口  适应阴影贴图分辨率, 开始生成阴影贴图
+//		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+//		glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+//		glClear(GL_DEPTH_BUFFER_BIT);
+//
+//		//解决悬浮的问题(好像并没有解决)   使用正面剔除
+//		//glEnable(GL_CULL_FACE);
+//		//glCullFace(GL_FRONT);
+//
+//		//实际上并没有解决失真问题，只是将失真变到了立方体内部，但可能会产生漏光问题
+//		//详情看：https://www.zhihu.com/question/321779117
+//
+//		//生成阴影贴图
+//		simpleDepthShader.use();		//对所有要进行阴影设置的物体使用这个shader
+//		for (unsigned int i = 0; i < 6; ++i)
+//			simpleDepthShader.setMat4("shadowMatrices[" + std::to_string(i) + "]", shadowTransforms[i]);
+//		simpleDepthShader.setFloat("far_plane", far_plane);
+//		simpleDepthShader.setVec3("lightPos", lightPos);
+//
+//		//优化：不使用bias，但是不渲染地面（不会产生阴影的地方不渲染阴影贴图）
+//		//见知乎答案：王永宝   https://www.zhihu.com/question/321779117
+//
+//		// floor
+//		//glBindVertexArray(planeVAO);
+//		//glActiveTexture(GL_TEXTURE0);
+//		//glBindTexture(GL_TEXTURE_2D, floorTexture);
 //		glm::mat4 model = glm::mat4(1.0f);
+//		//simpleDepthShader.setMat4("model", model);
+//		//glDrawArrays(GL_TRIANGLES, 0, 6);
+//
+//		// 2个cube
+//		glBindVertexArray(cubeVAO);
+//		glActiveTexture(GL_TEXTURE0);
+//		glBindTexture(GL_TEXTURE_2D, cubeTexture);
+//		model = glm::mat4(1.0f);
+//		model = glm::translate(model, glm::vec3(-1.0f, -0.5f, -1.0f));
+//		model = glm::scale(model, glm::vec3(0.5f));
+//		simpleDepthShader.setMat4("model", model);
+//		glDrawArrays(GL_TRIANGLES, 0, 36);
+//		model = glm::mat4(1.0f);
+//		model = glm::translate(model, glm::vec3(2.0f, -0.5f, 0.0f));
+//		model = glm::scale(model, glm::vec3(0.5f));
+//		simpleDepthShader.setMat4("model", model);
+//		glDrawArrays(GL_TRIANGLES, 0, 36);
+//
+//		// model
+//		glActiveTexture(GL_TEXTURE3);
+//		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+//		model = glm::mat4(1.0f);
+//		model = glm::translate(model, glm::vec3(-3.0, -0.5, 2.0));
+//		model = glm::scale(model, glm::vec3(0.15f));
+//		simpleDepthShader.setMat4("model", model);
+//		ourModel.Draw(simpleDepthShader);
+//
+//		//生成完毕，恢复默认帧缓冲，画到屏幕上
+//		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+//
+//		// bind to framebuffer and draw scene as we normally would to color texture
+//		// 不会画到窗口，而会画到纹理附件上去    (多重纹理版本)
+//		//glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+//
+//		//glCullFace(GL_BACK);
+//		//glDisable(GL_CULL_FACE);
+//
+//		// reset viewport  &  深度颜色缓存
+//		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+//		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+//
+//		//// 用于检查深度贴图是否有误
+//		//// render Depth map to quad for visual debugging		
+//		//// ---------------------------------------------
+//		//debugDepthQuad.use();
+//		//debugDepthQuad.setFloat("near_plane", near_plane);
+//		//debugDepthQuad.setFloat("far_plane", far_plane);
+//		//glActiveTexture(GL_TEXTURE0);
+//		//glBindTexture(GL_TEXTURE_2D, depthMap);
+//		//glBindVertexArray(quadVAO);
+//		//glDrawArrays(GL_TRIANGLES, 0, 6);
+//
+//		//开始正式绘制场景
+//		model = glm::mat4(1.0f);
 //		glm::mat4 view = camera.GetViewMatrix();
 //		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 //
-//		////第一步：先画天空盒，并且不允许深度写入，从而永远绘制在其他物体后
-//		//glDepthMask(GL_FALSE);		//禁用深度写入（先画，后面有其他物体的话就被覆盖）
-//		//skyboxShader.use();
-//		////设置观察和投影矩阵
-//		//skyboxShader.setMat4("projection", projection);
-//		////skyboxShader.setMat4("view", view);		//这样的话天空盒就和一般的盒子没区别，会动
-//		////更改如下：相当于去掉了view矩阵中的位移部分，而保留了旋转和变换
-//		//skyboxShader.setMat4("view", glm::mat4(glm::mat3(view)));	
-//		//glBindVertexArray(skyboxVAO);
-//		//glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
-//		//glDrawArrays(GL_TRIANGLES, 0, 36);
-//		//glDepthMask(GL_TRUE);		//开启深度写入
-//
 //		// set uniforms
-//		shaderSingleColor.use();
-//		shaderSingleColor.setMat4("view", view);
-//		shaderSingleColor.setMat4("projection", projection);
+//		//shaderSingleColor.use();
+//		//shaderSingleColor.setMat4("view", view);
+//		//shaderSingleColor.setMat4("projection", projection);
 //
 //		transparentShader.use();
 //		transparentShader.setMat4("view", view);
@@ -645,6 +695,7 @@
 //		//modelShader.setMat4("view", view);
 //		//modelShader.setMat4("projection", projection);
 //		modelShader.setVec3("viewPos", camera.Position);
+//		modelShader.setBool("torchMode", torchMode);
 //		// add time component to geometry shader in the form of a uniform
 //		//modelShader.setFloat("time", static_cast<float>(glfwGetTime()));
 //
@@ -686,69 +737,77 @@
 //
 //		//===============================================================================
 //
-//
 //		shader.use();
 //		//shader.setMat4("view", view);
 //		//shader.setMat4("projection", projection);
 //		//一定记得要加 ！！！
 //		shader.setVec3("viewPos", camera.Position);
+//		shader.setBool("torchMode", torchMode);
+//		shader.setInt("shadows", shadows); // enable/disable shadows by pressing 'SPACE'
+//		shader.setFloat("far_plane", far_plane);
 //
 //		//先画所有不透明的物体
 //		//1.开始时绘制地板 —— 不需要边框，因此设置不经过模板缓冲
-//		glStencilMask(0x00);		//禁用写入
+//		//glStencilMask(0x00);		//禁用写入
 //
 //		glBindVertexArray(planeVAO);
 //		glActiveTexture(GL_TEXTURE0);		//这里可以没有（默认激活0）
 //		glBindTexture(GL_TEXTURE_2D, floorTexture);
+//		glActiveTexture(GL_TEXTURE1);
+//		glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubeMap);
 //		shader.setMat4("model", glm::mat4(1.0f));
 //		glDrawArrays(GL_TRIANGLES, 0, 6);
 //		glBindVertexArray(0);
 //
 //		//2.绘制物体，但是要经过模板测试，修改stencil buffer
-//		glStencilMask(0xFF);			//允许写入
-//		glStencilFunc(GL_ALWAYS, 1, 0xFF);		//只要进行绘制，都永远通过，且更改模板值为1（op规定的）
+//		//glStencilMask(0xFF);			//允许写入
+//		//glStencilFunc(GL_ALWAYS, 1, 0xFF);		//只要进行绘制，都永远通过，且更改模板值为1（op规定的）
 //		//glEnable(GL_CULL_FACE);		//启用面剔除
 //
 //		glBindVertexArray(cubeVAO);
 //		glActiveTexture(GL_TEXTURE0);
 //		glBindTexture(GL_TEXTURE_2D, cubeTexture);
+//		glActiveTexture(GL_TEXTURE1);
+//		glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubeMap);
 //		model = glm::mat4(1.0f);
 //		model = glm::translate(model, glm::vec3(-1.0f, -0.5f, -1.0f));
+//		model = glm::scale(model, glm::vec3(0.5f));
 //		shader.setMat4("model", model);
 //		glDrawArrays(GL_TRIANGLES, 0, 36);
 //		model = glm::mat4(1.0f);
 //		model = glm::translate(model, glm::vec3(2.0f, -0.5f, 0.0f));
+//		model = glm::scale(model, glm::vec3(0.5f));
 //		shader.setMat4("model", model);
 //		glDrawArrays(GL_TRIANGLES, 0, 36);
 //
 //		//glDisable(GL_CULL_FACE);
 //
-//		//将物体放大一点点后绘制（禁止写入模板值），只有非1的位置会被绘制，达到边缘效果
-//		glStencilFunc(GL_NOTEQUAL, 1, 0xFF);	//不为1的才能绘制（对于屏幕而言 —— 所以不是整个覆盖在外面而是边缘）
-//		glStencilMask(0x00);					//禁止写入模板值（防止绘制成功时模板值被op改成1）
-//		glDisable(GL_DEPTH_TEST);				//禁用深度测试，从而边框可以透视
-//		shaderSingleColor.use();
-//		float scale = 1.05f;
+//		////将物体放大一点点后绘制（禁止写入模板值），只有非1的位置会被绘制，达到边缘效果
+//		//glStencilFunc(GL_NOTEQUAL, 1, 0xFF);	//不为1的才能绘制（对于屏幕而言 —— 所以不是整个覆盖在外面而是边缘）
+//		//glStencilMask(0x00);					//禁止写入模板值（防止绘制成功时模板值被op改成1）
+//		//glDisable(GL_DEPTH_TEST);				//禁用深度测试，从而边框可以透视
+//		//shaderSingleColor.use();
+//		//float scale = 1.05f;
 //
-//		// cubes
-//		glBindVertexArray(cubeVAO);
-//		glBindTexture(GL_TEXTURE_2D, cubeTexture);
-//		model = glm::mat4(1.0f);
-//		model = glm::translate(model, glm::vec3(-1.0f, -0.5f, -1.0f));
-//		model = glm::scale(model, glm::vec3(scale));		//新增的scale
-//		shaderSingleColor.setMat4("model", model);
-//		glDrawArrays(GL_TRIANGLES, 0, 36);
-//		model = glm::mat4(1.0f);
-//		model = glm::translate(model, glm::vec3(2.0f, -0.5f, 0.0f));
-//		model = glm::scale(model, glm::vec3(scale));		//新增的scale
-//		shaderSingleColor.setMat4("model", model);
-//		glDrawArrays(GL_TRIANGLES, 0, 36);
-//		glBindVertexArray(0);
+//		//// cubes
+//		//glBindVertexArray(cubeVAO);
+//		//glBindTexture(GL_TEXTURE_2D, cubeTexture);
+//		//model = glm::mat4(1.0f);
+//		//model = glm::translate(model, glm::vec3(-1.0f, -0.5f, -1.0f));
+//		//model = glm::scale(model, glm::vec3(scale));		//新增的scale
+//		//shaderSingleColor.setMat4("model", model);
+//		//glDrawArrays(GL_TRIANGLES, 0, 36);
+//		//model = glm::mat4(1.0f);
+//		//model = glm::translate(model, glm::vec3(2.0f, -0.5f, 0.0f));
+//		//model = glm::scale(model, glm::vec3(scale));		//新增的scale
+//		//shaderSingleColor.setMat4("model", model);
+//		//glDrawArrays(GL_TRIANGLES, 0, 36);
+//		//glBindVertexArray(0);
 //
-//		//恢复到默认状态
-//		glStencilMask(0xFF);		//恢复成可写，这样的话渲染循环中的glClear才能清除模板缓存
-//		glStencilFunc(GL_ALWAYS, 0, 0xFF);		//默认写0，只有在需要模板写入时才写1
-//		glEnable(GL_DEPTH_TEST);
+//		////恢复到默认状态
+//		//glStencilMask(0xFF);		//恢复成可写，这样的话渲染循环中的glClear才能清除模板缓存
+//		//glStencilFunc(GL_ALWAYS, 0, 0xFF);		//默认写0，只有在需要模板写入时才写1
+//		//glEnable(GL_DEPTH_TEST);
 //
 //		//画点光源物体
 //		// also draw the lamp object(s)
@@ -855,34 +914,34 @@
 //		//现在blit（位块传输）multisampled buffer(s) to normal colorbuffer of intermediate FBO.
 //		//Image is stored in screenTexture
 //
-//		glBindFramebuffer(GL_READ_FRAMEBUFFER, framebuffer);		//从framebuffer里读
-//		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, intermediateFBO);	//向中介中写
-//		//这里只传送了color buffer？
-//		glBlitFramebuffer(0, 0, SCR_WIDTH, SCR_HEIGHT, 0, 0, SCR_WIDTH, SCR_HEIGHT, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+//		//glBindFramebuffer(GL_READ_FRAMEBUFFER, framebuffer);		//从framebuffer里读
+//		//glBindFramebuffer(GL_DRAW_FRAMEBUFFER, intermediateFBO);	//向中介中写
+//		////这里只传送了color buffer？
+//		//glBlitFramebuffer(0, 0, SCR_WIDTH, SCR_HEIGHT, 0, 0, SCR_WIDTH, SCR_HEIGHT, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 //
 //
-//		//下面开始画到屏幕的四边形上(默认的frame buffer，即0)
+//		////下面开始画到屏幕的四边形上(默认的frame buffer，即0)
 //		//glBindFramebuffer(GL_FRAMEBUFFER, 0);
-//		glBindFramebuffer(GL_READ_FRAMEBUFFER, intermediateFBO);
-//		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+//		////glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 //
-//		//=======================  存疑：为什么这个注释掉后会有问题？ =========================
-//		glDisable(GL_DEPTH_TEST);	// disable depth test so screen-space quad isn't discarded due to depth test.
+//		////=======================  存疑：为什么这个注释掉后会有问题？ =========================
+//		//glDisable(GL_DEPTH_TEST);	// disable depth test so screen-space quad isn't discarded due to depth test.
 //
-//		//这边disable stencil_test导致箱子被边框覆盖的原因：
-//		//本来循环开始没有enable stencil test，导致下一次循环渲染时模板测试未开，从而纹理内渲染错误
-//		//现已经在开头加上，且这里本来也不需要disable模板测试
-//		//glDisable(GL_STENCIL_TEST);
+//		////这边disable stencil_test导致箱子被边框覆盖的原因：
+//		////本来循环开始没有enable stencil test，导致下一次循环渲染时模板测试未开，从而纹理内渲染错误
+//		////现已经在开头加上，且这里本来也不需要disable模板测试
+//		////glDisable(GL_STENCIL_TEST);
 //
-//		// clear all relevant buffers
-//		glClearColor(1.0f, 1.0f, 1.0f, 1.0f); // set clear color to white (not really necessary actually, since we won't be able to see behind the quad anyways)
-//		glClear(GL_COLOR_BUFFER_BIT);
+//		//// clear all relevant buffers
+//		//glClearColor(1.0f, 1.0f, 1.0f, 1.0f); // set clear color to white (not really necessary actually, since we won't be able to see behind the quad anyways)
+//		//glClear(GL_COLOR_BUFFER_BIT);
 //
-//		screenShader.use();
-//		screenShader.setBool("coreMode", CoreMode);
-//		glBindVertexArray(quadVAO);
-//		glBindTexture(GL_TEXTURE_2D, screenTexture);	// use the color attachment texture as the texture of the quad plane
-//		glDrawArrays(GL_TRIANGLES, 0, 6);
+//		//screenShader.use();
+//		//screenShader.setBool("coreMode", CoreMode);
+//		//screenShader.setBool("isGamma", gamma);
+//		//glBindVertexArray(quadVAO);
+//		//glBindTexture(GL_TEXTURE_2D, screenTexture);	// use the color attachment texture as the texture of the quad plane
+//		//glDrawArrays(GL_TRIANGLES, 0, 6);
 //
 //		//glEnable(GL_STENCIL_TEST);
 //
@@ -892,7 +951,7 @@
 //		glfwPollEvents();
 //	}
 //
-//	glDeleteVertexArrays(1, &cubeVAO);
+//	/*glDeleteVertexArrays(1, &cubeVAO);
 //	glDeleteVertexArrays(1, &planeVAO);
 //	glDeleteVertexArrays(1, &transparentVAO);
 //	glDeleteVertexArrays(1, &quadVAO);
@@ -904,7 +963,7 @@
 //	glDeleteBuffers(1, &skyboxVBO);
 //	glDeleteRenderbuffers(1, &rbo);
 //	glDeleteFramebuffers(1, &framebuffer);
-//	glDeleteFramebuffers(1, &intermediateFBO);
+//	glDeleteFramebuffers(1, &intermediateFBO);*/
 //
 //	// glfw: terminate, clearing all previously allocated GLFW resources.
 //	//-----------------------------------------------------------
@@ -977,7 +1036,7 @@
 //	if (glfwGetKey(window, GLFW_KEY_KP_2) == GLFW_PRESS)
 //		lightPos.z += cameraSpeed;
 //
-//	//开启锐化效果
+//	//开关锐化效果		(按下一次有效)
 //	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS && !CoreKeyPressed) {
 //		CoreMode = !CoreMode;
 //		CoreKeyPressed = true;
@@ -985,6 +1044,37 @@
 //	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_RELEASE)
 //	{
 //		CoreKeyPressed = false;
+//	}
+//
+//	//开关手电			(按下一次有效)
+//	if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS && !torchlightPressed) {
+//		torchMode = !torchMode;
+//		torchlightPressed = true;
+//	}
+//	if (glfwGetKey(window, GLFW_KEY_G) == GLFW_RELEASE)
+//	{
+//		torchlightPressed = false;
+//	}
+//
+//	//开关gamma矫正
+//	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS && !GammaPressed) {
+//		gamma = !gamma;
+//		GammaPressed = true;
+//	}
+//	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_RELEASE)
+//	{
+//		GammaPressed = false;
+//	}
+//
+//	//阴影开关
+//	if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS && !shadowsKeyPressed)
+//	{
+//		shadows = !shadows;
+//		shadowsKeyPressed = true;
+//	}
+//	if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_RELEASE)
+//	{
+//		shadowsKeyPressed = false;
 //	}
 //}
 //
