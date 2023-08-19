@@ -54,9 +54,6 @@ int main() {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	//使用包含4个样本的多重采样缓冲
-	glfwWindowHint(GLFW_SAMPLES, 4);
-
 	//创建窗口对象
 	//-----------------------------------------------------------
 	GLFWwindow *window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Screen", NULL, NULL);

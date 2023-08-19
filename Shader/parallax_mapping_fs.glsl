@@ -17,7 +17,6 @@ uniform float height_scale;
 
 vec2 ParallaxMapping(vec2 texCoords, vec3 viewDir);
 
-
 void main()
 {    
  // Offset texture coordinates with Parallax Mapping
@@ -30,7 +29,7 @@ void main()
 
     // then sample textures with new texture coords
     vec3 normal  = texture(normalMap, texCoords).rgb;
-    vec3 color = texture(diffuseMap, fs_in.TexCoords).rgb;
+    vec3 color = texture(diffuseMap, texCoords).rgb;
     normal = normalize(normal * 2.0 - 1.0);
 
     // Get diffuse color
