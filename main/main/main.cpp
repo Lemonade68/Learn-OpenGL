@@ -87,17 +87,18 @@ int main() {
 
 	//bulid shader program
 	//-----------------------------------------------------------
-	Shader shader("../../Shader/normal_mapping_vs.glsl", "../../Shader/normal_mapping_fs.glsl");
+	Shader shader("../../Shader/parallax_mapping_vs.glsl", "../../Shader/parallax_mapping_fs.glsl");
 	
 	// Load textures
-	GLuint diffuseMap = loadTexture("../../Textures/brickwall.jpg");
-	GLuint normalMap = loadTexture("../../Textures/brickwall_normal.jpg");
-
+	GLuint diffuseMap = loadTexture("../../Textures/bricks2.jpg");
+	GLuint normalMap = loadTexture("../../Textures/bricks2_normal.jpg");
+	GLuint depthMap = loadTexture("../../Textures/bricks2_disp.jpg");
 
 	// Set texture units 
 	shader.use();
 	shader.setInt("diffuseMap", 0);
 	shader.setInt("normalMap", 1);
+	shader.setInt("depthMap", 2);
 
 	//是否使用线框模式
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -132,10 +133,13 @@ int main() {
 		shader.setMat4("model", model);
 		shader.setVec3("lightPos", lightPos);
 		shader.setVec3("viewPos", camera.Position);
+		shader.setFloat("height_scale", 0.1f);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, diffuseMap);
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, normalMap);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, depthMap);
 		RenderQuad();
 
 		// render light source (simply re-renders a smaller plane at the light's position for debugging/visualization)
@@ -279,7 +283,7 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn) {
 }
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
-	camera.ProcessMouseScroll(static_cast<float>(yoffset));
+	camera.ProcessMouseScroll(static_cast<float>(yoffset) * 0.1);
 }
 
 void processInput(GLFWwindow *window) {

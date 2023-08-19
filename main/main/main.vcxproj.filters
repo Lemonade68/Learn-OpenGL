@@ -148,5 +148,11 @@
     <None Include="..\..\Shader\normal_mapping_vs.glsl">
       <Filter>资源文件</Filter>
     </None>
+    <None Include="..\..\Shader\parallax_mapping_fs.glsl">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\..\Shader\parallax_mapping_vs.glsl">
+      <Filter>资源文件</Filter>
+    </None>
   </ItemGroup>
 </Project>
