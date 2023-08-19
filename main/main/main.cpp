@@ -40,6 +40,11 @@ float lastFrame = 0.0f;		//ÉÏÒ»Ö¡µÄÊ±¼ä
 // Light position
 glm::vec3 lightPos(0.5f, 1.0f, 0.3f);
 
+bool mode = false;
+bool modeIsPressed = false;
+
+float height_scale = 0.1f;
+
 
 int main() {
 	// glfw: initialize and configure
@@ -90,9 +95,16 @@ int main() {
 	Shader shader("../../Shader/parallax_mapping_vs.glsl", "../../Shader/parallax_mapping_fs.glsl");
 	
 	// Load textures
-	GLuint diffuseMap = loadTexture("../../Textures/bricks2.jpg");
-	GLuint normalMap = loadTexture("../../Textures/bricks2_normal.jpg");
-	GLuint depthMap = loadTexture("../../Textures/bricks2_disp.jpg");
+	//×©¿éÇ½
+	GLuint diffuseMap_b = loadTexture("../../Textures/bricks2.jpg");
+	GLuint normalMap_b = loadTexture("../../Textures/bricks2_normal.jpg");
+	GLuint depthMap_b = loadTexture("../../Textures/bricks2_disp.jpg");
+	
+	//Íæ¾ßÏä£¨ÑÝÊ¾¶¸ÇÍÊÓ²îÌùÍ¼£©
+	//GLuint diffuseMap_t = loadTexture("../../Textures/wood.png");
+	GLuint diffuseMap_t = loadTexture("../../Textures/toy_box_diffuse.png");
+	GLuint normalMap_t = loadTexture("../../Textures/toy_box_normal.png");
+	GLuint depthMap_t = loadTexture("../../Textures/toy_box_disp.png");
 
 	// Set texture units 
 	shader.use();
@@ -133,13 +145,23 @@ int main() {
 		shader.setMat4("model", model);
 		shader.setVec3("lightPos", lightPos);
 		shader.setVec3("viewPos", camera.Position);
-		shader.setFloat("height_scale", 0.1f);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, diffuseMap);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, normalMap);
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, depthMap);
+		shader.setFloat("height_scale", height_scale);
+		if (mode) {
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, diffuseMap_b);
+			glActiveTexture(GL_TEXTURE1);
+			glBindTexture(GL_TEXTURE_2D, normalMap_b);
+			glActiveTexture(GL_TEXTURE2);
+			glBindTexture(GL_TEXTURE_2D, depthMap_b);
+		}
+		else {
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, diffuseMap_t);
+			glActiveTexture(GL_TEXTURE1);
+			glBindTexture(GL_TEXTURE_2D, normalMap_t);
+			glActiveTexture(GL_TEXTURE2);
+			glBindTexture(GL_TEXTURE_2D, depthMap_t);
+		}
 		RenderQuad();
 
 		// render light source (simply re-renders a smaller plane at the light's position for debugging/visualization)
@@ -320,6 +342,19 @@ void processInput(GLFWwindow *window) {
 		lightPos.z -= cameraSpeed;
 	if (glfwGetKey(window, GLFW_KEY_KP_2) == GLFW_PRESS)
 		lightPos.z += cameraSpeed;
+
+	//ÇÐ»»ÌùÍ¼
+	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS && !modeIsPressed) {
+		mode = !mode;
+		modeIsPressed = true;
+	}
+	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_RELEASE)
+		modeIsPressed = false;
+
+	if (glfwGetKey(window, GLFW_KEY_KP_8) == GLFW_PRESS)
+		height_scale += cameraSpeed * 0.1f;
+	if (glfwGetKey(window, GLFW_KEY_KP_5) == GLFW_PRESS)
+		height_scale -= cameraSpeed * 0.1f;
 }
 
 
