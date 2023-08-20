@@ -164,6 +164,10 @@
     <None Include="..\..\Shader\framebuffer_screen_vs.glsl" />
     <None Include="..\..\Shader\gamma_correction_fs.glsl" />
     <None Include="..\..\Shader\gamma_correction_vs.glsl" />
+    <None Include="..\..\Shader\hdr_light_fs.glsl" />
+    <None Include="..\..\Shader\hdr_light_vs.glsl" />
+    <None Include="..\..\Shader\hdr_quad_fs.glsl" />
+    <None Include="..\..\Shader\hdr_quad_vs.glsl" />
     <None Include="..\..\Shader\light_fs.glsl" />
     <None Include="..\..\Shader\light_vs.glsl" />
     <None Include="..\..\Shader\nano_fs.glsl" />
