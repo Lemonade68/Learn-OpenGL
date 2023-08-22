@@ -165,6 +165,10 @@
     <None Include="..\..\Shader\bloom_vs.glsl" />
     <None Include="..\..\Shader\blur_fs.glsl" />
     <None Include="..\..\Shader\blur_vs.glsl" />
+    <None Include="..\..\Shader\deferred_lightbox_fs.glsl" />
+    <None Include="..\..\Shader\deferred_lightbox_vs.glsl" />
+    <None Include="..\..\Shader\deferred_shading_fs.glsl" />
+    <None Include="..\..\Shader\deferred_shading_vs.glsl" />
     <None Include="..\..\Shader\fragment_shader.glsl" />
     <None Include="..\..\Shader\framebuffer_screen_fs.glsl" />
     <None Include="..\..\Shader\framebuffer_screen_vs.glsl" />
@@ -177,6 +181,8 @@
     <None Include="..\..\Shader\lightbox_fs.glsl" />
     <None Include="..\..\Shader\light_fs.glsl" />
     <None Include="..\..\Shader\light_vs.glsl" />
+    <None Include="..\..\Shader\nanosuit_gbuffer_fs.glsl" />
+    <None Include="..\..\Shader\nanosuit_gbuffer_vs.glsl" />
     <None Include="..\..\Shader\nano_fs.glsl" />
     <None Include="..\..\Shader\nano_fs_normal.glsl" />
     <None Include="..\..\Shader\nano_gs_explode.glsl" />

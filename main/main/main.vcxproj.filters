@@ -187,5 +187,23 @@
     <None Include="..\..\Shader\lightbox_fs.glsl">
       <Filter>资源文件</Filter>
     </None>
+    <None Include="..\..\Shader\deferred_lightbox_fs.glsl">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\..\Shader\deferred_lightbox_vs.glsl">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\..\Shader\deferred_shading_fs.glsl">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\..\Shader\deferred_shading_vs.glsl">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\..\Shader\nanosuit_gbuffer_fs.glsl">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\..\Shader\nanosuit_gbuffer_vs.glsl">
+      <Filter>资源文件</Filter>
+    </None>
   </ItemGroup>
 </Project>
